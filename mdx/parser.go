@@ -10,7 +10,10 @@ import (
 	"strings"
 	"sync"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/sazardev/go-pretty-pdf/theme"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -69,6 +72,13 @@ func NewParser(opts ...ParserOption) *Parser {
 			goldmark.WithExtensions(
 				meta.New(meta.WithStoresInDocument()),
 				extension.GFM,
+				highlighting.NewHighlighting(
+					highlighting.WithFormatOptions(
+						chromahtml.WithClasses(true),
+						chromahtml.ClassPrefix(theme.ChromaClassPrefix),
+						chromahtml.WithLineNumbers(false),
+					),
+				),
 			),
 			goldmark.WithParserOptions(
 				parser.WithAutoHeadingID(),
@@ -102,7 +112,8 @@ func (p *Parser) SetVars(vars map[string]string) {
 }
 
 func (p *Parser) ParseDir(dir string) ([]*Document, error) {
-	var files []string
+	var docFiles []string
+	var txtFiles []string
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -111,8 +122,12 @@ func (p *Parser) ParseDir(dir string) ([]*Document, error) {
 		if d.IsDir() {
 			return nil
 		}
-		if strings.HasSuffix(strings.ToLower(d.Name()), ".mdx") {
-			files = append(files, path)
+		name := strings.ToLower(d.Name())
+		switch {
+		case strings.HasSuffix(name, ".mdx") || strings.HasSuffix(name, ".md"):
+			docFiles = append(docFiles, path)
+		case strings.HasSuffix(name, ".txt"):
+			txtFiles = append(txtFiles, path)
 		}
 		return nil
 	})
@@ -120,20 +135,58 @@ func (p *Parser) ParseDir(dir string) ([]*Document, error) {
 		return nil, fmt.Errorf("walking source dir: %w", err)
 	}
 
-	if len(files) == 0 {
-		return nil, fmt.Errorf("no .mdx files found in %s", dir)
+	if len(docFiles) == 0 && len(txtFiles) == 0 {
+		return nil, fmt.Errorf("no .md, .mdx, or .txt files found in %s", dir)
 	}
 
 	var docs []*Document
 	var parseErrs ParseErrors
 
-	for _, file := range files {
-		doc, err := p.ParseFile(file)
+	type pendingAutoDoc struct {
+		path, html string
+	}
+	var pendingAuto []pendingAutoDoc
+
+	for _, file := range docFiles {
+		frontmatter, html, err := p.convert(file)
 		if err != nil {
 			parseErrs = append(parseErrs, ParseFileError{File: file, Err: err})
 			continue
 		}
-		docs = append(docs, doc)
+		if frontmatter == nil {
+			// No --- frontmatter block at all: fall back to the same
+			// filename-based auto id/title as .txt, rather than failing.
+			// A file with a malformed/partial frontmatter block still
+			// reaches the validator and errors there, unchanged.
+			pendingAuto = append(pendingAuto, pendingAutoDoc{path: file, html: html})
+			continue
+		}
+		docs = append(docs, &Document{Path: file, Frontmatter: frontmatter, HTML: html})
+	}
+
+	if len(pendingAuto) > 0 {
+		paths := make([]string, len(pendingAuto))
+		htmlByPath := make(map[string]string, len(pendingAuto))
+		for i, pa := range pendingAuto {
+			paths[i] = pa.path
+			htmlByPath[pa.path] = pa.html
+		}
+		for _, e := range assignAutoIDs(paths, docs) {
+			docs = append(docs, &Document{
+				Path: e.path,
+				Frontmatter: map[string]interface{}{
+					"id":    e.id,
+					"title": e.title,
+				},
+				HTML: htmlByPath[e.path],
+			})
+		}
+	}
+
+	if len(txtFiles) > 0 {
+		txtDocs, txtErrs := p.parseTextFiles(txtFiles, docs)
+		docs = append(docs, txtDocs...)
+		parseErrs = append(parseErrs, txtErrs...)
 	}
 
 	sortDocuments(docs)
@@ -148,10 +201,100 @@ func (p *Parser) ParseDir(dir string) ([]*Document, error) {
 	return docs, nil
 }
 
-func (p *Parser) ParseFile(path string) (*Document, error) {
+// autoEntry is a filename-derived id/title assignment for a file that has
+// no way of specifying its own (no frontmatter block at all).
+type autoEntry struct {
+	path, id, title string
+}
+
+// assignAutoIDs auto-generates the frontmatter that a file without a ---
+// block doesn't carry: a "NN-slug" name yields id "[NN.0.0]" and title
+// "Slug" (mirroring the project's numbered-filename convention). Names
+// without a numeric prefix get the next major version free after every id
+// already in use — by existing/already-numbered documents passed in
+// existing, and by other auto-numbered files in this same paths batch — so
+// an author who just drops a file in never has to think about ids or
+// collides with one that's explicitly numbered.
+func assignAutoIDs(paths []string, existing []*Document) []autoEntry {
+	sort.Strings(paths)
+
+	entries := make([]autoEntry, len(paths))
+	var pending []int
+
+	maxMajor := 0
+	for _, doc := range existing {
+		if m := idExtractRe.FindStringSubmatch(doc.ID()); m != nil {
+			if n := atoi(m[1]); n > maxMajor {
+				maxMajor = n
+			}
+		}
+	}
+
+	for i, path := range paths {
+		base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+		if major, rest, ok := splitTxtName(base); ok {
+			entries[i] = autoEntry{path: path, id: fmt.Sprintf("[%d.0.0]", major), title: humanizeTitle(rest)}
+			if major > maxMajor {
+				maxMajor = major
+			}
+			continue
+		}
+		entries[i] = autoEntry{path: path, title: humanizeTitle(base)}
+		pending = append(pending, i)
+	}
+
+	nextMajor := maxMajor + 1
+	for _, i := range pending {
+		entries[i].id = fmt.Sprintf("[%d.0.0]", nextMajor)
+		nextMajor++
+	}
+	return entries
+}
+
+// parseTextFiles auto-generates the frontmatter that plain .txt files don't
+// carry (see assignAutoIDs) and renders their content as literal, escaped
+// text (see renderPlainText) rather than markdown.
+func (p *Parser) parseTextFiles(paths []string, existing []*Document) ([]*Document, ParseErrors) {
+	var docs []*Document
+	var errs ParseErrors
+	for _, e := range assignAutoIDs(paths, existing) {
+		doc, err := p.parseTextFile(e.path, e.id, e.title)
+		if err != nil {
+			errs = append(errs, ParseFileError{File: e.path, Err: err})
+			continue
+		}
+		docs = append(docs, doc)
+	}
+	return docs, errs
+}
+
+func (p *Parser) parseTextFile(path, id, title string) (*Document, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	raw = p.substituteVars(raw)
+
+	return &Document{
+		Path: path,
+		Frontmatter: map[string]interface{}{
+			"id":    id,
+			"title": title,
+		},
+		HTML: renderPlainText(string(raw)),
+	}, nil
+}
+
+// convert reads and renders a .md/.mdx file, returning its frontmatter and
+// rendered HTML. frontmatter is nil only when the file has no --- block at
+// all; a block that's present but fails to parse as YAML is a hard error
+// (via meta.TryGet, which — unlike meta.Get — distinguishes "no block" from
+// "malformed block" instead of returning nil for both) rather than being
+// silently treated the same as a file with no frontmatter.
+func (p *Parser) convert(path string) (frontmatter map[string]interface{}, html string, err error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, "", fmt.Errorf("reading %s: %w", path, err)
 	}
 
 	raw = p.substituteVars(raw)
@@ -160,16 +303,28 @@ func (p *Parser) ParseFile(path string) (*Document, error) {
 	var buf bytes.Buffer
 
 	if err := p.md.Convert(raw, &buf, parser.WithContext(ctx)); err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", path, err)
+		return nil, "", fmt.Errorf("parsing %s: %w", path, err)
 	}
 
-	frontmatter := meta.Get(ctx)
+	frontmatter, err = meta.TryGet(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("parsing frontmatter in %s: %w", path, err)
+	}
+	html = p.components.Transpile(buf.String())
+	return frontmatter, html, nil
+}
+
+// ParseFile parses a single .md/.mdx file, requiring an explicit ---
+// frontmatter block (unlike ParseDir, it has no directory context to
+// auto-number a file that has none).
+func (p *Parser) ParseFile(path string) (*Document, error) {
+	frontmatter, html, err := p.convert(path)
+	if err != nil {
+		return nil, err
+	}
 	if frontmatter == nil {
 		return nil, fmt.Errorf("%s: missing frontmatter", path)
 	}
-
-	html := buf.String()
-	html = p.components.Transpile(html)
 
 	return &Document{
 		Path:        path,

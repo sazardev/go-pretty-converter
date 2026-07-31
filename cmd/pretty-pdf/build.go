@@ -404,14 +404,14 @@ func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, ne
 		mdxCount := countMDXFiles(cfg.Source)
 		if mdxCount == 0 {
 			results = append(results, output.PreFlightResult{
-				Name:    "MDX files found",
+				Name:    "Source files found",
 				Passed:  false,
 				Warning: true,
-				Message: fmt.Sprintf("no .mdx files in %s", cfg.Source),
+				Message: fmt.Sprintf("no .md, .mdx, or .txt files in %s", cfg.Source),
 			})
 		} else {
 			results = append(results, output.PreFlightResult{
-				Name:   fmt.Sprintf("Source directory (%d .mdx files)", mdxCount),
+				Name:   fmt.Sprintf("Source directory (%d .md/.mdx/.txt files)", mdxCount),
 				Passed: true,
 			})
 		}
@@ -581,7 +581,11 @@ func countMDXFiles(dir string) int {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".mdx") {
+		if d.IsDir() {
+			return nil
+		}
+		name := strings.ToLower(d.Name())
+		if strings.HasSuffix(name, ".mdx") || strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".txt") {
 			count++
 		}
 		return nil

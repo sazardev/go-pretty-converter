@@ -78,25 +78,46 @@ func main() {
 ## How it works
 
 ```
-MDX files → Parse frontmatter & markdown → Transpile components → Compose HTML → Render PDF
+MD/MDX files → Parse frontmatter & markdown → Transpile components → Compose HTML → Render PDF
 ```
 
-1. **Parse** — goldmark parses MDX files with YAML frontmatter
+1. **Parse** — goldmark parses `.md`/`.mdx` files with YAML frontmatter. Fenced code blocks (` ```go `, ` ```python `, ...) are syntax-highlighted via [Chroma](https://github.com/alecthomas/chroma), using a style paired to each theme's tone (e.g. Dracula for the `dark` theme, the Gruvbox style for the `gruvbox` theme, GitHub's light style everywhere else)
 2. **Transpile** — custom components (`<DeepDive>`, `<Warning>`, `<Axiom>`) become styled HTML
 3. **Compose** — HTML assembled with embedded template + CSS + auto-generated Table of Contents
 4. **Render** — headless Chrome prints to PDF with headers, footers, and PDF bookmarks, then an automatic quality audit checks the result for overflowing content, broken images, low-contrast text, near-empty output, and headings at risk of being clipped by the print engine (see `pretty-pdf build`'s `Warnings` output, or `render.RenderToPDFWithAudit` in the library API)
 
 Documents are sorted by their `[X.Y.Z]` frontmatter ID, not filename.
 
+A `.md`/`.mdx` file doesn't strictly need a `---` frontmatter block either:
+if one is missing entirely, `id` and `title` are generated automatically
+from the filename, the same convention `.txt` uses below (`02-getting
+-started.mdx` → id `[2.0.0]`, title "Getting Started"; no numeric prefix →
+the next free major version, so it never collides with an explicitly
+numbered doc). The content itself still gets full markdown rendering —
+components, raw HTML, everything — unlike `.txt`. A `---` block that *is*
+present but fails to parse as YAML is still a hard error, so a typo in
+real frontmatter doesn't silently get treated as "no frontmatter".
+
+`.txt` files are also accepted for freeform writing with zero setup: they
+have no frontmatter, so `id` and `title` are generated automatically from
+the filename (`03-field-notes.txt` → id `[3.0.0]`, title "Field Notes";
+no numeric prefix → the next free major version, so it never collides
+with an explicitly numbered doc). Content is treated as literal text —
+blank lines become paragraphs, single line breaks become `<br>` — and is
+always HTML-escaped, so `.txt` loses component/raw-HTML customization but
+in exchange never executes anything the author typed. Good for a quick
+note dropped into an otherwise structured `.mdx` book.
+
 ## Trust model
 
 MDX is parsed with raw HTML passthrough enabled, and custom components
 don't escape their inner content — this lets authors embed arbitrary
-HTML/CSS for rich documents, but it also means a `.mdx` file can contain
-a `<script>` tag that will execute during rendering. By default, headless
-Chrome's network access is blocked while rendering (see `WithNetworkAccess`),
-so scripts can't exfiltrate data or fetch remote content — but they still
-run. **Only build PDFs from MDX you trust.** See [SECURITY.md](SECURITY.md)
+HTML/CSS for rich documents, but it also means a `.md` or `.mdx` file can
+contain a `<script>` tag that will execute during rendering. By default,
+headless Chrome's network access is blocked while rendering (see
+`WithNetworkAccess`), so scripts can't exfiltrate data or fetch remote
+content — but they still run. **Only build PDFs from source files you
+trust.** See [SECURITY.md](SECURITY.md)
 for details.
 
 ## MDX format

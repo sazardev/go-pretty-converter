@@ -246,7 +246,7 @@ pretty-pdf serve [flags]
 |---|---|---|
 | `--port` | `8080` | HTTP server port |
 
-Uses Server-Sent Events for live reload. Watches `.mdx`, `.yaml`, and `.yml` files for changes.
+Uses Server-Sent Events for live reload. Watches `.md`, `.mdx`, `.txt`, `.yaml`, and `.yml` files for changes.
 
 ---
 
@@ -258,7 +258,7 @@ Watch the source directory for changes and rebuild the PDF on every file change.
 pretty-pdf watch [flags]
 ```
 
-Debounces changes by 300ms. Watches `.mdx`, `.yaml`, and `.yml` files. Prints a build/error summary on `Ctrl+C`.
+Debounces changes by 300ms. Watches `.md`, `.mdx`, `.txt`, `.yaml`, and `.yml` files. Prints a build/error summary on `Ctrl+C`.
 
 ---
 

@@ -28,18 +28,22 @@ Note that custom CSS and HTML templates provided via configuration files
 are injected directly into the rendered page. Only use trusted
 CSS/template files.
 
-### Trust model: MDX content is not sandboxed
+### Trust model: MD/MDX content is not sandboxed
 
-The MDX parser enables raw HTML passthrough (goldmark's unsafe-HTML mode)
+The parser enables raw HTML passthrough (goldmark's unsafe-HTML mode)
 so that authors can embed arbitrary HTML in their documents, and the
 built-in component transpiler (`<DeepDive>`, `<Warning>`, `<Axiom>`, and
 any component registered via `WithComponent`) does not escape inner
 content. Any `<script>`, event handler, or `<img>`/`<link>` tag in a
-`.mdx` file will execute or fetch as part of rendering.
+`.md` or `.mdx` file will execute or fetch as part of rendering.
 
 By default, `RenderToPDF` blocks all outbound network requests during
 rendering (see `WithNetworkAccess`), which closes the most severe
 exfiltration/SSRF vector. Script execution itself is not sandboxed,
-however — **only render `.mdx` files from authors you trust.** Do not
-point this tool at user-submitted or otherwise untrusted MDX content
+however — **only render `.md`/`.mdx` files from authors you trust.** Do
+not point this tool at user-submitted or otherwise untrusted content
 without additional isolation (e.g. a container with no network egress).
+
+`.txt` files are the exception: they're always HTML-escaped rather than
+passed through raw, so a `.txt` file cannot execute a `<script>` tag or
+inject markup regardless of who authored it.

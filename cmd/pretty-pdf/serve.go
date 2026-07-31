@@ -80,7 +80,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 					return
 				}
 				ext := filepath.Ext(event.Name)
-				if ext != ".mdx" && ext != ".yaml" && ext != ".yml" {
+				if ext != ".mdx" && ext != ".md" && ext != ".txt" && ext != ".yaml" && ext != ".yml" {
 					continue
 				}
 				if event.Op&(fsnotify.Create|fsnotify.Write|fsnotify.Remove|fsnotify.Rename) != 0 {

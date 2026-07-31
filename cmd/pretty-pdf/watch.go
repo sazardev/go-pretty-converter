@@ -77,7 +77,8 @@ func runWatch(cmd *cobra.Command, args []string) error {
 				if !ok {
 					return
 				}
-				if filepath.Ext(event.Name) != ".mdx" && filepath.Ext(event.Name) != ".yaml" && filepath.Ext(event.Name) != ".yml" {
+				ext := filepath.Ext(event.Name)
+				if ext != ".mdx" && ext != ".md" && ext != ".txt" && ext != ".yaml" && ext != ".yml" {
 					continue
 				}
 				if event.Op&(fsnotify.Create|fsnotify.Write|fsnotify.Remove|fsnotify.Rename) != 0 {
