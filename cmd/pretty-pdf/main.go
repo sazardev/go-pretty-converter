@@ -63,8 +63,8 @@ var (
 	epubOutPath  string
 	epubLanguage string
 
-	formatStr      string
-	buildLanguage  string
+	formatStr     string
+	buildLanguage string
 )
 
 var rootCmd = &cobra.Command{

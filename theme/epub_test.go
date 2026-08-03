@@ -193,7 +193,7 @@ func TestResolveForEPUBGoogleFontsImport(t *testing.T) {
 	th, _ := Get(NameDefault)
 
 	css, err := ResolveForEPUB(th, Options{
-		Fonts:             Fonts{GoogleImports: []string{"Inter:400,600"}},
+		Fonts:             Fonts{GoogleImports: []string{testGoogleFont}},
 		AllowNetworkFonts: false,
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func TestResolveForEPUBGoogleFontsImport(t *testing.T) {
 	}
 
 	css, err = ResolveForEPUB(th, Options{
-		Fonts:             Fonts{GoogleImports: []string{"Inter:400,600"}},
+		Fonts:             Fonts{GoogleImports: []string{testGoogleFont}},
 		AllowNetworkFonts: true,
 	})
 	if err != nil {

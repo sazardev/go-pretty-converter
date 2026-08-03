@@ -346,15 +346,15 @@ func TestCoverImageMIMEType(t *testing.T) {
 		path string
 		want string
 	}{
-		{"cover.png", "image/png"},
-		{"cover.PNG", "image/png"},
-		{"cover.jpg", "image/jpeg"},
-		{"cover.jpeg", "image/jpeg"},
-		{"cover.JPEG", "image/jpeg"},
-		{"cover.svg", "image/svg+xml"},
-		{"cover.SVG", "image/svg+xml"},
-		{"cover.webp", "image/webp"},
-		{"cover.WEBP", "image/webp"},
+		{"cover.png", mimeTypePNG},
+		{"cover.PNG", mimeTypePNG},
+		{"cover.jpg", mimeTypeJPEG},
+		{"cover.jpeg", mimeTypeJPEG},
+		{"cover.JPEG", mimeTypeJPEG},
+		{"cover.svg", mimeTypeSVG},
+		{"cover.SVG", mimeTypeSVG},
+		{"cover.webp", mimeTypeWebP},
+		{"cover.WEBP", mimeTypeWebP},
 	}
 	for _, tt := range tests {
 		if got := coverImageMIMEType(tt.path); got != tt.want {

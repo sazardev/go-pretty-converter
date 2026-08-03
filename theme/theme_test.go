@@ -7,6 +7,10 @@ import (
 	"testing"
 )
 
+// testGoogleFont is a sample Options.Fonts.GoogleImports value shared by
+// tests across this package's test files.
+const testGoogleFont = "Inter:400,600"
+
 func TestGetAndList(t *testing.T) {
 	list := List()
 	if len(list) != len(order) {
@@ -190,7 +194,7 @@ func TestResolveGoogleFontsImportOnlyWhenAllowed(t *testing.T) {
 	th, _ := Get(NameDefault)
 
 	css, _, err := Resolve(th, Options{
-		Fonts:             Fonts{GoogleImports: []string{"Inter:400,600"}},
+		Fonts:             Fonts{GoogleImports: []string{testGoogleFont}},
 		AllowNetworkFonts: false,
 	})
 	if err != nil {
@@ -201,7 +205,7 @@ func TestResolveGoogleFontsImportOnlyWhenAllowed(t *testing.T) {
 	}
 
 	css, _, err = Resolve(th, Options{
-		Fonts:             Fonts{GoogleImports: []string{"Inter:400,600"}},
+		Fonts:             Fonts{GoogleImports: []string{testGoogleFont}},
 		AllowNetworkFonts: true,
 	})
 	if err != nil {

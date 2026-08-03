@@ -11,13 +11,14 @@ import (
 	"sync"
 
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
-	"github.com/sazardev/go-pretty-pdf/theme"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	goldmarkHtml "github.com/yuin/goldmark/renderer/html"
+
+	"github.com/sazardev/go-pretty-pdf/theme"
 )
 
 type ParseFileError struct {
@@ -302,7 +303,7 @@ func (p *Parser) convert(path string) (frontmatter map[string]interface{}, html 
 	ctx := parser.NewContext()
 	var buf bytes.Buffer
 
-	if err := p.md.Convert(raw, &buf, parser.WithContext(ctx)); err != nil {
+	if err = p.md.Convert(raw, &buf, parser.WithContext(ctx)); err != nil {
 		return nil, "", fmt.Errorf("parsing %s: %w", path, err)
 	}
 

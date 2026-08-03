@@ -277,19 +277,19 @@ func runBuildJSON(cmd *cobra.Command) error {
 		switch f {
 		case prettypdf.FormatPDF:
 			pdfPath := outputPaths[prettypdf.FormatPDF]
-			html, err := pdf.ComposeHTML(docs)
-			if err != nil {
-				return fmt.Errorf("composing HTML: %w", err)
+			html, composeErr := pdf.ComposeHTML(docs)
+			if composeErr != nil {
+				return fmt.Errorf("composing HTML: %w", composeErr)
 			}
 			pdfOpt := prettypdf.WithOutputFile(pdfPath)
 			pdfOpt(pdf)
-			if err = pdf.Render(html); err != nil {
-				return fmt.Errorf("rendering PDF: %w", err)
+			if composeErr = pdf.Render(html); composeErr != nil {
+				return fmt.Errorf("rendering PDF: %w", composeErr)
 			}
 		case prettypdf.FormatEPUB:
 			epubPath := outputPaths[prettypdf.FormatEPUB]
-			if err := pdf.RenderEpub(docs, epubPath); err != nil {
-				return fmt.Errorf("writing EPUB: %w", err)
+			if epubErr := pdf.RenderEpub(docs, epubPath); epubErr != nil {
+				return fmt.Errorf("writing EPUB: %w", epubErr)
 			}
 		}
 	}

@@ -100,12 +100,12 @@ func resolveEpubCSS(cfg *config.Config) (string, error) {
 		return string(data), nil
 	}
 
-	themeName := cfg.Theme
-	if themeName == "" {
-		themeName = defaultTheme
+	themeLabel := cfg.Theme
+	if themeLabel == "" {
+		themeLabel = defaultTheme
 	}
 
-	return theme.ResolveByNameForEPUB(themeName, themeOptionsFromConfig(cfg), cwd)
+	return theme.ResolveByNameForEPUB(themeLabel, themeOptionsFromConfig(cfg), cwd)
 }
 
 func themeOptionsFromConfig(cfg *config.Config) theme.Options {

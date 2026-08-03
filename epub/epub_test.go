@@ -344,7 +344,7 @@ func TestWriteAcceptsSVGCoverImage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opening EPUB: %v", err)
 	}
-	defer zr.Close()
+	defer func() { _ = zr.Close() }()
 
 	found := false
 	for _, f := range zr.File {
@@ -355,7 +355,7 @@ func TestWriteAcceptsSVGCoverImage(t *testing.T) {
 				t.Fatalf("opening cover.svg in EPUB: %v", err)
 			}
 			data, _ := io.ReadAll(rc)
-			rc.Close()
+			_ = rc.Close()
 			if string(data) != svgContent {
 				t.Errorf("cover.svg content mismatch")
 			}
@@ -370,7 +370,7 @@ func TestWriteAcceptsSVGCoverImage(t *testing.T) {
 		if f.Name == "OEBPS/content.opf" {
 			rc, _ := f.Open()
 			data, _ := io.ReadAll(rc)
-			rc.Close()
+			_ = rc.Close()
 			opf := string(data)
 			if !strings.Contains(opf, `media-type="image/svg+xml"`) {
 				t.Error("expected content.opf to declare image/svg+xml media type for SVG cover")

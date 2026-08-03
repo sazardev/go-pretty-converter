@@ -50,7 +50,8 @@ func coverImageDimensionsIn(imagePath string) (widthIn, heightIn float64, err er
 	switch ext {
 	case ".png", ".jpg", ".jpeg", ".webp":
 	case ".svg":
-		w, h, err := svgPixelDimensions(imagePath)
+		var w, h float64
+		w, h, err = svgPixelDimensions(imagePath)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -80,19 +81,26 @@ func coverImageDimensionsIn(imagePath string) (widthIn, heightIn float64, err er
 	return float64(cfg.Width) / coverPxPerIn, float64(cfg.Height) / coverPxPerIn, nil
 }
 
+const (
+	mimeTypePNG  = "image/png"
+	mimeTypeJPEG = "image/jpeg"
+	mimeTypeSVG  = "image/svg+xml"
+	mimeTypeWebP = "image/webp"
+)
+
 // coverImageMIMEType maps a cover image's extension to its MIME type for a
 // data: URI. Callers must have already validated the extension via
 // coverImageDimensionsIn.
 func coverImageMIMEType(imagePath string) string {
 	switch strings.ToLower(filepath.Ext(imagePath)) {
 	case ".png":
-		return "image/png"
+		return mimeTypePNG
 	case ".svg":
-		return "image/svg+xml"
+		return mimeTypeSVG
 	case ".webp":
-		return "image/webp"
+		return mimeTypeWebP
 	default:
-		return "image/jpeg"
+		return mimeTypeJPEG
 	}
 }
 
@@ -108,8 +116,9 @@ func svgPixelDimensions(imagePath string) (widthPx, heightPx float64, err error)
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	var svgWidth, svgHeight, viewBox string
+	var tok xml.Token
 	for {
-		tok, err := decoder.Token()
+		tok, err = decoder.Token()
 		if err != nil {
 			return 0, 0, fmt.Errorf("parsing SVG %s: %w", imagePath, err)
 		}
