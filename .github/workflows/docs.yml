@@ -54,7 +54,7 @@ jobs:
           cp examples/output/example-output.pdf _site/library-demo.pdf
           cp examples/full-demo/demo.pdf _site/full-demo.pdf
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
