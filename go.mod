@@ -12,7 +12,7 @@ require (
 	github.com/muesli/termenv v0.16.0
 	github.com/pdfcpu/pdfcpu v0.13.0
 	github.com/spf13/cobra v1.10.2
-	github.com/yuin/goldmark v1.8.2
+	github.com/yuin/goldmark v1.8.5
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	github.com/yuin/goldmark-meta v1.1.0
 	golang.org/x/image v0.43.0
