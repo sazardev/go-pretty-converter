@@ -84,42 +84,44 @@ func screenshotHTML(ctx context.Context, htmlContent string, width, height int64
 // favicon.svg, scaled to fill whatever viewport it's captured at.
 func appleTouchIconHTML() string {
 	return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-html,body{margin:0;padding:0;background:#1c1c1c;height:100%;}
+html,body{margin:0;padding:0;background:#282828;height:100%;}
 .mark{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;}
 .mark span{
   font-family:ui-monospace,'SF Mono','JetBrains Mono',Consolas,'Courier New',monospace;
-  font-weight:700;color:#fffdf8;font-size:58vw;line-height:1;
+  font-weight:700;color:#fe8019;font-size:58vw;line-height:1;
 }
 </style></head><body><div class="mark"><span>&gt;_</span></div></body></html>`
 }
 
-// ogImageHTML is the 1200x630 social-share card: the same cream-paper,
-// ink-and-accent-brown palette as the site's default (classic) theme.
+// ogImageHTML is the 1200x630 social-share card, using the same gruvbox
+// tokens (bg/ink/accent) the landing page previews by default — see
+// landingDefaultTheme in landing.go.
 func ogImageHTML() string {
 	return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-html,body{margin:0;padding:0;width:1200px;height:630px;background:#fffdf8;}
+html,body{margin:0;padding:0;width:1200px;height:630px;background:#282828;}
 .card{
   width:1200px;height:630px;box-sizing:border-box;
   padding:80px 90px;display:flex;flex-direction:column;justify-content:center;
-  border-left:14px solid #7a4a2b;
+  border-left:14px solid #fe8019;
   font-family:Georgia,'Iowan Old Style','Palatino',serif;
 }
 .eyebrow{
   font-family:ui-monospace,'SF Mono','JetBrains Mono',Consolas,'Courier New',monospace;
   font-size:22px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  color:#7a4a2b;margin-bottom:22px;
+  color:#fe8019;margin-bottom:22px;
 }
-.title{font-size:88px;font-weight:700;font-style:italic;color:#1c1c1c;margin-bottom:26px;line-height:1;}
-.tagline{font-size:32px;color:#1c1c1c;line-height:1.5;max-width:920px;}
+.title{font-size:80px;font-weight:700;color:#ebdbb2;margin-bottom:26px;line-height:1;}
+.title em{font-style:italic;color:#fe8019;}
+.tagline{font-size:32px;color:#d5c4a1;line-height:1.5;max-width:920px;}
 .footer{
   margin-top:48px;font-family:ui-monospace,'SF Mono','JetBrains Mono',Consolas,'Courier New',monospace;
-  font-size:22px;color:#5a5a5a;
+  font-size:22px;color:#a89984;
 }
 </style></head><body>
 <div class="card">
-  <div class="eyebrow">Write Markdown. Ship a book.</div>
-  <div class="title">go-pretty-pdf</div>
-  <div class="tagline">Turn a folder of MDX into a beautifully typeset, print-ready PDF via headless Chrome.</div>
+  <div class="eyebrow">go &middot; CLI + library</div>
+  <div class="title">Write Markdown. Ship a beautiful <em>PDF.</em></div>
+  <div class="tagline">pretty-pdf turns a folder of Markdown into a typeset, print-ready PDF via headless Chrome.</div>
   <div class="footer">go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest</div>
 </div>
 </body></html>`

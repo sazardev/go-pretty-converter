@@ -79,6 +79,12 @@ func sitemapXML() string {
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>` + siteBaseURL + `docs.html</loc>
+    <lastmod>` + lastmod + `</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>` + siteBaseURL + docsPDFDefault + `</loc>
     <lastmod>` + lastmod + `</lastmod>
     <changefreq>weekly</changefreq>
@@ -113,8 +119,8 @@ func webManifest() string {
   "scope": "` + siteBaseURL + `",
   "display": "browser",
   "lang": "en",
-  "theme_color": "#fffdf8",
-  "background_color": "#fffdf8",
+  "theme_color": "#282828",
+  "background_color": "#282828",
   "icons": [
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
@@ -145,17 +151,18 @@ headless Chrome — no LaTeX, no separate design tool.
 - Language: Go 1.26+
 - License: MIT
 - Rendering engine: headless Chrome (via chromedp)
-- Ships 8 builtin themes (default, minimal, modern, classic, corporate, dark, academic, editorial) plus a custom ` + "`.theme.yml`" + ` system
+- Ships 17 builtin themes (default, minimal, modern, classic, corporate, dark, academic, editorial, sepia, terminal, blueprint, ivy, government, resume, legal, latex, gruvbox) plus a custom ` + "`.theme.yml`" + ` system
 - Usable as a composable Go library or as a standalone ` + "`pretty-pdf`" + ` CLI
 
 ## Docs
 
-- Full documentation (single page): ` + siteBaseURL + `
+- Marketing homepage: ` + siteBaseURL + `
+- Full documentation (single page): ` + siteBaseURL + `docs.html
 - Repository: ` + siteRepoURL + `
 - Go package reference: https://pkg.go.dev/github.com/sazardev/go-pretty-pdf
-- CLI reference: ` + siteBaseURL + `#cli-reference
-- Themes: ` + siteBaseURL + `#themes
-- Changelog: ` + siteBaseURL + `#changelog
+- CLI reference: ` + siteBaseURL + `docs.html#cli-reference
+- Themes: ` + siteBaseURL + `docs.html#themes
+- Changelog: ` + siteBaseURL + `docs.html#changelog
 
 ## Notes for assistants
 
@@ -171,10 +178,10 @@ designed for both scripted/CLI use and embedding as a library.
 // 16x16 in a browser tab.
 func faviconSVG() string {
 	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#1c1c1c"/>
+  <rect width="64" height="64" fill="#282828"/>
   <text x="32" y="43" text-anchor="middle"
     font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace"
-    font-size="34" font-weight="700" fill="#fffdf8">&gt;_</text>
+    font-size="34" font-weight="700" fill="#fe8019">&gt;_</text>
 </svg>
 `
 }

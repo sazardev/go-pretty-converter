@@ -62,14 +62,16 @@ func main() {
 	sections = append(sections, cliSections(cli, mdRenderer)...)
 	sections = append(sections, changelogSection(changelog, mdRenderer)...)
 
-	html := buildHTML(sections)
+	landingHTML := buildLandingHTML()
+	docsHTML := buildDocsHTML(sections)
 	outDir := filepath.Join(root, "_site")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "error creating output directory: %v\n", err)
 		os.Exit(1)
 	}
 	textAssets := map[string]string{
-		"index.html":       html,
+		"index.html":       landingHTML,
+		"docs.html":        docsHTML,
 		"robots.txt":       robotsTXT(),
 		"sitemap.xml":      sitemapXML(),
 		"site.webmanifest": webManifest(),
@@ -86,7 +88,7 @@ func main() {
 	generateRasterAssets(outDir)
 	generateDocsPDF(outDir, readme, cli, changelog)
 
-	fmt.Println("Documentation site generated at _site/index.html")
+	fmt.Println("Site generated at _site/index.html (landing) and _site/docs.html (full reference)")
 }
 
 func findRepoRoot() (string, error) {
@@ -322,7 +324,7 @@ func stripHTMLTags(s string) string {
 	return regexp.MustCompile(`<[^>]+>`).ReplaceAllString(s, "")
 }
 
-func buildHTML(sections []Section) string {
+func buildDocsHTML(sections []Section) string {
 	n := len(sections)
 	navItems := make([]string, n)
 	bodyParts := make([]string, n)
@@ -344,6 +346,9 @@ func buildHTML(sections []Section) string {
 			`<section id="%s" class="%s">%s<%s class="section-title">%s</%s><div class="section-content">%s</div></section>`,
 			s.ID, cls, eyebrow, headingTag, s.Title, headingTag, s.Content)
 	}
+
+	docsTitle := "go-pretty-pdf — Full Documentation (CLI Reference, MDX Format, Changelog)"
+	docsURL := siteBaseURL + "docs.html"
 
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en" data-site-theme="classic">
@@ -390,7 +395,8 @@ func buildHTML(sections []Section) string {
 <body>
 <nav class="sidebar">
   <div class="sidebar-brand">
-    <a href="#hero">go-pretty-pdf</a>
+    <a href="index.html" class="sidebar-home-link">&larr; pretty-pdf</a>
+    <a href="#hero">go-pretty-pdf docs</a>
     <span class="sidebar-tagline">Write Markdown. Ship a book.</span>
     <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="sidebar-nav" aria-label="Toggle navigation">&#9776;</button>
   </div>
@@ -417,9 +423,9 @@ func buildHTML(sections []Section) string {
 </script>
 </body>
 </html>`,
-		siteTitle, siteDescription, siteKeywords, siteBaseURL,
-		siteTitle, siteDescription, siteBaseURL, siteBaseURL,
-		siteTitle, siteDescription, siteBaseURL,
+		docsTitle, siteDescription, siteKeywords, docsURL,
+		docsTitle, siteDescription, docsURL, siteBaseURL,
+		docsTitle, siteDescription, siteBaseURL,
 		jsonLD(),
 		siteCSS+"\n"+generatedThemeCSS(), strings.Join(navItems, "\n    "), themeSwitcherHTML(), strings.Join(bodyParts, "\n  "), commandPaletteHTML(), siteJS)
 }
