@@ -98,7 +98,7 @@ nav.links a:hover{color:var(--ink)}
 }
 .theme-dropdown-btn:hover{border-color:var(--accent);color:var(--ink)}
 .theme-dropdown-btn b{color:var(--ink);font-weight:700}
-.theme-dropdown-btn .swatches{display:flex;gap:3px}
+.theme-dropdown-btn .swatches{display:flex;align-items:center;gap:3px;margin:0}
 .theme-dropdown-btn .swatch{width:8px;height:8px;border:1px solid rgba(0,0,0,.2)}
 .theme-dropdown-btn .chevron{width:12px;height:12px;transition:transform .15s ease}
 .theme-dropdown.open .chevron{transform:rotate(180deg)}
@@ -124,7 +124,7 @@ nav.links a:hover{color:var(--ink)}
 .theme-option:hover{background:var(--bg)}
 .theme-option.active{color:var(--ink);font-weight:700}
 .theme-option.active::after{content:"\2713";margin-left:auto;color:var(--accent)}
-.theme-option .swatches{display:flex;gap:4px}
+.theme-option .swatches{display:flex;align-items:center;gap:4px;margin:0}
 .theme-option .swatch{width:10px;height:10px;border:1px solid rgba(0,0,0,.2)}
 
 @media (max-width:560px){
