@@ -49,8 +49,12 @@ func mustTheme(name string) theme.Theme {
 	return t
 }
 
-// landingThemeDeclarations returns just the --bg/--surface/--ink/--accent
-// declarations for t (no selector, no braces) — callers wrap them.
+// landingThemeDeclarations returns the --bg/--surface/--ink/--accent AND
+// --font-heading/--font-body/--font-code declarations for t (no selector,
+// no braces) — callers wrap them. The fonts are the theme's real
+// --pdf-font-* stacks, so picking "classic" genuinely swaps the landing
+// page's headline into Georgia/Palatino and "gruvbox" into JetBrains Mono,
+// not just its colors.
 func landingThemeDeclarations(t theme.Theme) string {
 	vars := extractThemeVars(t.CSS)
 	var b strings.Builder
@@ -66,31 +70,64 @@ func landingThemeDeclarations(t theme.Theme) string {
 	if v, ok := vars[varAccent]; ok {
 		fmt.Fprintf(&b, "  --accent: %s;\n", v)
 	}
+	if v, ok := vars[varFontHeading]; ok {
+		fmt.Fprintf(&b, "  --font-heading: %s;\n", v)
+	}
+	if v, ok := vars[varFontBody]; ok {
+		fmt.Fprintf(&b, "  --font-body: %s;\n", v)
+	}
+	if v, ok := vars[varFontCode]; ok {
+		fmt.Fprintf(&b, "  --font-code: %s;\n", v)
+	}
 	return b.String()
 }
 
+// themeSwatchSpans renders the three bg/ink/accent color dots shared by
+// both the Themes-section cards and the nav dropdown's compact options.
+func themeSwatchSpans(t theme.Theme) string {
+	vars := extractThemeVars(t.CSS)
+	return fmt.Sprintf(`<span class="swatch" style="background:%s"></span><span class="swatch" style="background:%s"></span><span class="swatch" style="background:%s"></span>`,
+		vars[varBg], vars[varPrimary], vars[varAccent])
+}
+
 // landingThemeCards renders one clickable swatch card per builtin theme for
-// the "Themes" section — clicking sets data-theme on <html>, and the CSS
-// landingThemeCSS() generated above takes over instantly, so the whole page
-// re-skins itself using the theme's real colors.
+// the "Themes" showcase section — clicking sets data-theme on <html>, and
+// the CSS landingThemeCSS() generated above takes over instantly, so the
+// whole page re-skins itself using the theme's real colors and fonts.
 func landingThemeCards() string {
 	var b strings.Builder
 	for _, t := range theme.List() {
-		vars := extractThemeVars(t.CSS)
 		active := ""
 		if t.Name == landingDefaultTheme {
 			active = " active"
 		}
 		fmt.Fprintf(&b, `<div class="theme-card%s" data-name="%s" tabindex="0" role="button" aria-label="Preview %s theme">
-  <div class="swatches">
-    <span class="swatch" style="background:%s"></span>
-    <span class="swatch" style="background:%s"></span>
-    <span class="swatch" style="background:%s"></span>
-  </div>
+  <div class="swatches">%s</div>
   <div class="theme-name">%s</div>
   <div class="theme-cat">%s</div>
 </div>
-`, active, t.Name, t.Name, vars[varBg], vars[varPrimary], vars[varAccent], t.Name, t.Category)
+`, active, t.Name, t.Name, themeSwatchSpans(t), t.Name, t.Category)
+	}
+	return b.String()
+}
+
+// landingThemeDropdownOptions renders the compact theme list shown inside
+// the nav bar's "Theme: X" dropdown — the same 17 themes, same click
+// behavior (applyTheme in landing.js matches on .theme-card AND
+// .theme-option), just without the category line so 17 of them fit in a
+// narrow panel.
+func landingThemeDropdownOptions() string {
+	var b strings.Builder
+	for _, t := range theme.List() {
+		active := ""
+		if t.Name == landingDefaultTheme {
+			active = " active"
+		}
+		fmt.Fprintf(&b, `<button type="button" class="theme-option%s" data-name="%s">
+  <span class="swatches">%s</span>
+  <span class="theme-name">%s</span>
+</button>
+`, active, t.Name, themeSwatchSpans(t), t.Name)
 	}
 	return b.String()
 }
@@ -158,6 +195,15 @@ func buildLandingHTML() string {
       <a href="docs.html#changelog">Changelog</a>
     </nav>
     <div class="nav-cta">
+      <div class="theme-dropdown">
+        <button type="button" class="theme-dropdown-btn" id="themeDropdownBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="swatches" id="navThemeSwatches">%s</span>
+          <span>Theme: <b id="navThemeLabel">%s</b></span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="theme-dropdown-panel" id="themeDropdownPanel" hidden>
+%s        </div>
+      </div>
       <a class="gh-stars" href="%s" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 00-2.53 15.59c.4.07.55-.17.55-.38l-.01-1.49c-2.01.44-2.44-.97-2.44-.97-.33-.84-.81-1.06-.81-1.06-.66-.45.05-.44.05-.44.73.05 1.12.75 1.12.75.65 1.11 1.7.79 2.12.6.07-.48.26-.79.46-.97-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.75-1.93-.08-.18-.32-.92.07-1.92 0 0 .61-.2 2 .73a6.9 6.9 0 013.64 0c1.39-.94 2-.73 2-.73.39 1 .15 1.74.07 1.92.47.5.75 1.14.75 1.93 0 2.77-1.69 3.38-3.3 3.56.27.23.51.68.51 1.37l-.01 2.03c0 .2.14.44.55.37A8 8 0 008 0z"/></svg>
         GitHub
@@ -334,6 +380,7 @@ func buildLandingHTML() string {
 		siteTitle, siteDescription, siteBaseURL,
 		jsonLD(),
 		landingCSS, landingThemeCSS(),
+		themeSwatchSpans(mustTheme(landingDefaultTheme)), landingDefaultTheme, landingThemeDropdownOptions(),
 		siteRepoURL,
 		copyIconSVG(),
 		landingThemeCards(), landingDefaultTheme, docsPDFFilename(landingDefaultTheme),

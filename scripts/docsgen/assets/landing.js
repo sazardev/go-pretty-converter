@@ -122,43 +122,84 @@
   }
 
   // ---------- live theme switcher ----------
-  // Colors come entirely from CSS ([data-theme="x"] rules generated
-  // server-side by landing.go from the real theme CSS) — this just flips
-  // the attribute, so there is exactly one source of truth for every
-  // theme's palette.
+  // Colors AND fonts come entirely from CSS ([data-theme="x"] rules
+  // generated server-side by landing.go from each theme's real
+  // --pdf-bg/--pdf-accent/--pdf-font-* values) — this just flips the
+  // attribute, so there is exactly one source of truth for every theme's
+  // look, shared by the nav dropdown and the Themes-section gallery.
   function applyTheme(name, persist) {
     document.documentElement.setAttribute("data-theme", name);
-    document.querySelectorAll(".theme-card").forEach(function (card) {
-      card.classList.toggle("active", card.dataset.name === name);
+    document.querySelectorAll(".theme-card, .theme-option").forEach(function (el) {
+      el.classList.toggle("active", el.dataset.name === name);
     });
-    var label = document.getElementById("activeThemeLabel");
-    if (label) label.textContent = name;
+
+    var sectionLabel = document.getElementById("activeThemeLabel");
+    if (sectionLabel) sectionLabel.textContent = name;
+    var navLabel = document.getElementById("navThemeLabel");
+    if (navLabel) navLabel.textContent = name;
+
+    var navSwatches = document.getElementById("navThemeSwatches");
+    var pickedOption = document.querySelector('.theme-option[data-name="' + name + '"] .swatches');
+    if (navSwatches && pickedOption) navSwatches.innerHTML = pickedOption.innerHTML;
+
     var pdfLink = document.getElementById("themePdfLink");
     if (pdfLink) pdfLink.setAttribute("href", "go-pretty-pdf-docs-" + name + ".pdf");
+
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
     }
   }
 
   function initThemeSwitcher() {
-    var grid = document.getElementById("themeGrid");
-    if (!grid) return;
+    var options = document.querySelectorAll(".theme-card, .theme-option");
+    if (!options.length) return;
 
     var saved = null;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
-    if (saved && grid.querySelector('.theme-card[data-name="' + saved + '"]')) {
+    if (saved && document.querySelector('[data-name="' + saved + '"]')) {
       applyTheme(saved, false);
     }
 
-    grid.querySelectorAll(".theme-card").forEach(function (card) {
-      var name = card.dataset.name;
-      card.addEventListener("click", function () { applyTheme(name, true); });
-      card.addEventListener("keydown", function (e) {
+    options.forEach(function (el) {
+      var name = el.dataset.name;
+      el.addEventListener("click", function () { applyTheme(name, true); });
+      el.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           applyTheme(name, true);
         }
       });
+    });
+  }
+
+  // ---------- nav theme dropdown open/close ----------
+  function initThemeDropdown() {
+    var dropdown = document.querySelector(".theme-dropdown");
+    var btn = document.getElementById("themeDropdownBtn");
+    if (!dropdown || !btn) return;
+
+    function close() {
+      dropdown.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+    function toggle() {
+      var willOpen = !dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", willOpen);
+      btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggle();
+    });
+    dropdown.querySelectorAll(".theme-option").forEach(function (opt) {
+      opt.addEventListener("click", close);
+    });
+    document.addEventListener("click", function (e) {
+      if (!dropdown.contains(e.target)) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
     });
   }
 
@@ -168,5 +209,6 @@
     initReveal();
     renderTerminal();
     initThemeSwitcher();
+    initThemeDropdown();
   });
 })();
