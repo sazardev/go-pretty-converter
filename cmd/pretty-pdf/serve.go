@@ -51,8 +51,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 		return rebuildErr
 	}
 
-	http.HandleFunc("/", ls.serveHTML)
-	http.HandleFunc("/events", ls.serveSSE)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", ls.serveHTML)
+	mux.HandleFunc("/events", ls.serveSSE)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -106,7 +107,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	addr := fmt.Sprintf(":%d", servePort)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}
 

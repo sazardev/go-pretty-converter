@@ -54,32 +54,40 @@ func ParsePaperSize(name string) (width, height float64, ok bool) {
 // ParseCSSUnit converts a CSS length string (e.g. "20mm", "0.8in") to
 // inches. It returns 0 for empty or unrecognized input.
 func ParseCSSUnit(s string) float64 {
+	v, _ := ParseCSSUnitStrict(s)
+	return v
+}
+
+// ParseCSSUnitStrict is ParseCSSUnit with a separate ok result so callers
+// can distinguish "0in", a legitimate value, from an unrecognized/empty
+// input that ParseCSSUnit reports as 0 too.
+func ParseCSSUnitStrict(s string) (float64, bool) {
 	s = strings.TrimSpace(s)
 	if s == "" {
-		return 0
+		return 0, false
 	}
 
 	m := cssUnitRe.FindStringSubmatch(s)
 	if m == nil {
-		return 0
+		return 0, false
 	}
 	value, err := strconv.ParseFloat(m[1], 64)
 	if err != nil {
-		return 0
+		return 0, false
 	}
 
 	switch strings.ToLower(m[2]) {
 	case "in":
-		return value
+		return value, true
 	case "mm":
-		return value / 25.4
+		return value / 25.4, true
 	case "cm":
-		return value / 2.54
+		return value / 2.54, true
 	case "pt":
-		return value / 72.0
+		return value / 72.0, true
 	case "px":
-		return value / 96.0
+		return value / 96.0, true
 	default:
-		return 0
+		return 0, false
 	}
 }

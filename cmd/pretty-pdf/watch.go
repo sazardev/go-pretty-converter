@@ -101,6 +101,11 @@ func runWatch(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	// Kick off an initial build so the output exists immediately, not only
+	// after the first file change — the whole point of `watch` is a
+	// continuously current PDF.
+	rebuildCh <- "rebuild"
+
 	for range rebuildCh {
 		output.PrintWatchRebuild()
 

@@ -63,3 +63,32 @@ func TestParseCSSUnit(t *testing.T) {
 		}
 	}
 }
+
+func TestParseCSSUnitStrict(t *testing.T) {
+	tests := []struct {
+		in   string
+		want float64
+		ok   bool
+	}{
+		{"", 0, false},
+		{"1in", 1, true},
+		{"25.4mm", 1, true},
+		{"0mm", 0, true}, // explicit zero is a valid, meaningful choice
+		{"96px", 1, true},
+		{"10bogus", 0, false},
+		{"10", 0, false},   // bare number, no unit
+		{"10em", 0, false}, // em isn't an absolute print unit
+		{"not a length", 0, false},
+	}
+	for _, tt := range tests {
+		got, ok := ParseCSSUnitStrict(tt.in)
+		if ok != tt.ok {
+			t.Errorf("ParseCSSUnitStrict(%q) ok = %v, want %v", tt.in, ok, tt.ok)
+			continue
+		}
+		diff := got - tt.want
+		if diff < -0.001 || diff > 0.001 {
+			t.Errorf("ParseCSSUnitStrict(%q) = %v, want %v", tt.in, got, tt.want)
+		}
+	}
+}

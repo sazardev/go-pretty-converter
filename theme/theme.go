@@ -160,7 +160,7 @@ func Resolve(t Theme, opts Options) (string, ResolvedSections, error) {
 	b.WriteString("\n")
 	b.WriteString(t.CSS)
 	b.WriteString("\n")
-	b.WriteString(chromaCSSFor(t.Name))
+	b.WriteString(chromaCSSFor(t.Name, t.CSS))
 	b.WriteString("\n")
 	if len(root) > 0 {
 		b.WriteString(":root{" + strings.Join(root, "") + "}\n")

@@ -144,7 +144,7 @@ pretty-pdf epub [flags]
 | `--author` | `""` | Book author |
 | `--theme` | `"default"` | Theme name (theme CSS is converted to reflowable EPUB form) |
 | `--css` | `""` | Custom CSS file path (overrides theme entirely) |
-| `--cover-image` | `""` | Custom cover image (`.png`/`.jpg`/`.jpeg`/`.svg`), full-bleed as the first page |
+| `--cover-image` | `""` | Custom cover image (`.png`/`.jpg`/`.jpeg`/`.svg`/`.webp`), full-bleed as the first page |
 | `--language` | `"en"` | Book language (BCP-47 tag, e.g. `en`, `es`) |
 | `--color-primary` | `""` | Theme override: primary color |
 | `--color-accent` | `""` | Theme override: accent color |

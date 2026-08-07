@@ -124,6 +124,7 @@ func WithAuthor(author string) Option {
 func WithCSS(css string) Option {
 	return func(p *PDF) {
 		p.composeOpts.CSS = css
+		p.epubOpts.CSS = css
 	}
 }
 
@@ -144,6 +145,7 @@ func WithTheme(t theme.Theme) Option {
 	return func(p *PDF) {
 		if t.CSS != "" {
 			p.composeOpts.CSS = t.CSS
+			p.epubOpts.CSS = t.CSS
 		}
 	}
 }
@@ -153,21 +155,39 @@ func WithTheme(t theme.Theme) Option {
 // themes directory, or a direct path to a .theme.yml/.css file — applies
 // opts customization (colors, fonts, density, network fonts), and wires
 // the resulting section toggles (cover, TOC, page numbers, header) into
-// composeOpts/renderOpts.
+// composeOpts/renderOpts. The theme is resolved through both the PDF and
+// the EPUB pipelines, so a later EPUB build (Build with FormatEPUB or
+// RenderEpub) carries the same theme, not the default stylesheet.
 func WithThemeName(name string, opts theme.Options) Option {
 	return func(p *PDF) {
-		cwd, _ := os.Getwd()
-		css, sections, err := theme.ResolveByName(name, opts, cwd)
-		if err != nil {
-			p.pendingWarnings = append(p.pendingWarnings, fmt.Sprintf("theme %q: %v", name, err))
-			return
-		}
-		p.composeOpts.CSS = css
-		p.composeOpts.ShowCover = sections.Cover
-		p.composeOpts.ShowTOC = sections.TOC
-		p.renderOpts.PageNumbers = sections.PageNumbers
-		p.renderOpts.ShowHeader = sections.Header
+		p.applyTheme(name, opts)
 	}
+}
+
+// applyTheme resolves name through both the PDF (ResolveByName) and EPUB
+// (ResolveByNameForEPUB) theme pipelines. The PDF result drives the
+// section toggles (cover/TOC/page numbers/header) plus composeOpts.CSS;
+// the EPUB result goes to epubOpts.CSS so both output formats get the same
+// theme. Resolve failures are recorded as non-fatal warnings.
+func (p *PDF) applyTheme(name string, opts theme.Options) {
+	cwd, _ := os.Getwd()
+	css, sections, err := theme.ResolveByName(name, opts, cwd)
+	if err != nil {
+		p.pendingWarnings = append(p.pendingWarnings, fmt.Sprintf("theme %q: %v", name, err))
+		return
+	}
+	p.composeOpts.CSS = css
+	p.composeOpts.ShowCover = sections.Cover
+	p.composeOpts.ShowTOC = sections.TOC
+	p.renderOpts.PageNumbers = sections.PageNumbers
+	p.renderOpts.ShowHeader = sections.Header
+
+	epubCSS, err := theme.ResolveByNameForEPUB(name, opts, cwd)
+	if err != nil {
+		p.pendingWarnings = append(p.pendingWarnings, fmt.Sprintf("theme %q (EPUB): %v", name, err))
+		return
+	}
+	p.epubOpts.CSS = epubCSS
 }
 
 func WithComponent(name string, handler mdx.ComponentHandler) Option {
@@ -320,22 +340,13 @@ func themeOptionsFromConfig(cfg *config.Config) theme.Options {
 func WithConfigCSSAndTemplate(cfg *config.Config) Option {
 	return func(p *PDF) {
 		if cfg.Theme != "" {
-			cwd, _ := os.Getwd()
-			css, sections, err := theme.ResolveByName(cfg.Theme, themeOptionsFromConfig(cfg), cwd)
-			if err != nil {
-				p.pendingWarnings = append(p.pendingWarnings, fmt.Sprintf("theme %q: %v", cfg.Theme, err))
-			} else {
-				p.composeOpts.CSS = css
-				p.composeOpts.ShowCover = sections.Cover
-				p.composeOpts.ShowTOC = sections.TOC
-				p.renderOpts.PageNumbers = sections.PageNumbers
-				p.renderOpts.ShowHeader = sections.Header
-			}
+			p.applyTheme(cfg.Theme, themeOptionsFromConfig(cfg))
 		}
 		if cfg.CSS != "" {
 			data, err := os.ReadFile(cfg.CSS)
 			if err == nil {
 				p.composeOpts.CSS = string(data)
+				p.epubOpts.CSS = string(data)
 			} else {
 				p.pendingWarnings = append(p.pendingWarnings, fmt.Sprintf("reading CSS file %s: %v", cfg.CSS, err))
 			}
@@ -369,6 +380,8 @@ func WithFullConfig(cfg *config.Config) Option {
 		if cfg.Render.Timeout != "" {
 			if d, err := time.ParseDuration(cfg.Render.Timeout); err == nil {
 				p.renderOpts.Timeout = d
+			} else {
+				p.configErr = fmt.Errorf("invalid render timeout %q: %v (expected a duration like 30s or 1m)", cfg.Render.Timeout, err)
 			}
 		}
 
@@ -386,18 +399,37 @@ func WithFullConfig(cfg *config.Config) Option {
 		// meaningful choice (e.g. for a full-bleed dark theme) and must not
 		// be indistinguishable from "not set in the config file at all".
 		// p.renderOpts already holds render.DefaultOptions() from New(), so
-		// an unset field is simply left at its default.
+		// an unset field is simply left at its default. A value that can't
+		// be parsed as a CSS length is a hard config error rather than a
+		// silent fallback to 0 — a 0 margin would silently collapse the
+		// layout instead of telling the author their config is wrong.
 		if cfg.Render.MarginTop != "" {
-			p.renderOpts.MarginTop = config.ParseCSSUnit(cfg.Render.MarginTop)
+			if v, ok := config.ParseCSSUnitStrict(cfg.Render.MarginTop); ok {
+				p.renderOpts.MarginTop = v
+			} else {
+				p.configErr = fmt.Errorf("invalid margin_top %q: expected a CSS length like 20mm, 1in, or 0mm", cfg.Render.MarginTop)
+			}
 		}
 		if cfg.Render.MarginBot != "" {
-			p.renderOpts.MarginBottom = config.ParseCSSUnit(cfg.Render.MarginBot)
+			if v, ok := config.ParseCSSUnitStrict(cfg.Render.MarginBot); ok {
+				p.renderOpts.MarginBottom = v
+			} else {
+				p.configErr = fmt.Errorf("invalid margin_bottom %q: expected a CSS length like 20mm, 1in, or 0mm", cfg.Render.MarginBot)
+			}
 		}
 		if cfg.Render.MarginLeft != "" {
-			p.renderOpts.MarginLeft = config.ParseCSSUnit(cfg.Render.MarginLeft)
+			if v, ok := config.ParseCSSUnitStrict(cfg.Render.MarginLeft); ok {
+				p.renderOpts.MarginLeft = v
+			} else {
+				p.configErr = fmt.Errorf("invalid margin_left %q: expected a CSS length like 20mm, 1in, or 0mm", cfg.Render.MarginLeft)
+			}
 		}
 		if cfg.Render.MarginRight != "" {
-			p.renderOpts.MarginRight = config.ParseCSSUnit(cfg.Render.MarginRight)
+			if v, ok := config.ParseCSSUnitStrict(cfg.Render.MarginRight); ok {
+				p.renderOpts.MarginRight = v
+			} else {
+				p.configErr = fmt.Errorf("invalid margin_right %q: expected a CSS length like 20mm, 1in, or 0mm", cfg.Render.MarginRight)
+			}
 		}
 
 		if cfg.Render.CoverImage != "" {
@@ -512,15 +544,29 @@ func (p *PDF) Build(ctx context.Context) error {
 	if p.validator != nil {
 		p.logVerbose("Running validation...")
 		var allErrs []mdx.ValidationError
+		warnings := 0
 		for _, doc := range docs {
-			errs := p.validator.Validate(doc)
-			allErrs = append(allErrs, errs...)
+			for _, e := range p.validator.Validate(doc) {
+				// Content findings (excess heading depth) are advisory,
+				// mirroring the CLI's `check` semantics (where they're only
+				// fatal with --strict): they're printed but never fail a
+				// build. Structural frontmatter errors still do.
+				if e.Field == mdx.ContentField {
+					fmt.Printf("  - (warning) %v\n", e)
+					warnings++
+					continue
+				}
+				allErrs = append(allErrs, e)
+			}
 		}
 		if len(allErrs) > 0 {
 			for _, e := range allErrs {
 				fmt.Printf("  - %v\n", e)
 			}
 			return fmt.Errorf("validation failed: %d error(s)", len(allErrs))
+		}
+		if warnings > 0 {
+			p.logVerbose(fmt.Sprintf("Validation passed with %d content warning(s)", warnings))
 		}
 		p.logVerbose("Validation passed")
 	}
@@ -639,7 +685,16 @@ func (p *PDF) ComposeHTML(docs []*mdx.Document) (string, error) {
 }
 
 func (p *PDF) Render(html string) error {
-	report, err := render.RenderToPDFWithAudit(html, p.outputFile, p.renderOpts)
+	return p.RenderWithContext(context.Background(), html)
+}
+
+// RenderWithContext is Render with the browser rooted in ctx instead of
+// context.Background(): canceling ctx (client disconnect, SIGINT wired to
+// context cancellation) tears down the in-flight Chrome render rather than
+// running to completion or to opts.Timeout regardless. opts.Timeout still
+// applies as an upper bound layered on top of ctx.
+func (p *PDF) RenderWithContext(ctx context.Context, html string) error {
+	report, err := render.RenderToPDFWithAuditContext(ctx, html, p.outputFile, p.renderOpts)
 	if err != nil {
 		return err
 	}

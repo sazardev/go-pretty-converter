@@ -1,6 +1,7 @@
 package prettypdf
 
 import (
+	"archive/zip"
 	"context"
 	"io"
 	"os"
@@ -538,5 +539,121 @@ func TestPDFBuildRenderSmoke(t *testing.T) {
 	info, err := os.Stat(outPath)
 	if err != nil || info.Size() == 0 {
 		t.Fatal("expected a non-empty PDF to be produced")
+	}
+}
+
+// TestBuildEPUBAppliesTheme guards a real regression: Build() with
+// FormatEPUB used to write the EPUB with the *default* stylesheet, silently
+// dropping the configured theme/CSS — epubOpts.CSS was never populated by
+// the option pipeline (only the standalone `epub` command resolved themes).
+// The theme's own --pdf-* declarations are the discriminator: the default
+// EPUB stylesheet only *consumes* them via var(--pdf-bg, ...), it never
+// declares them.
+func TestBuildEPUBAppliesTheme(t *testing.T) {
+	dir := t.TempDir()
+	writeFixtureMDX(t, dir, "a.mdx", "[1.0.0]", "Chapter One")
+
+	outPath := filepath.Join(dir, "out.epub")
+	p, err := New(
+		WithSourceDir(dir),
+		WithOutputFile(outPath),
+		WithFormats(FormatEPUB),
+		WithThemeName("dark", theme.Options{}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if buildErr := p.Build(context.Background()); buildErr != nil {
+		t.Fatalf("Build: %v", buildErr)
+	}
+
+	r, err := zip.OpenReader(outPath)
+	if err != nil {
+		t.Fatalf("opening epub: %v", err)
+	}
+	defer func() { _ = r.Close() }()
+
+	var css string
+	for _, f := range r.File {
+		if f.Name != "OEBPS/css/style.css" {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, readErr := io.ReadAll(rc)
+		_ = rc.Close()
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		css = string(b)
+	}
+	if css == "" {
+		t.Fatal("expected an OEBPS/css/style.css entry in the epub")
+	}
+	if !strings.Contains(css, "--pdf-bg:") {
+		t.Error("expected the dark theme's --pdf-bg declaration in the EPUB stylesheet; got the default stylesheet instead")
+	}
+}
+
+// TestBuildContentWarningsNonFatal guards validation parity between `build`
+// and `check`/`epub`: a content finding (excess heading depth) must not
+// fail a build, only a structural frontmatter error should.
+func TestBuildContentWarningsNonFatal(t *testing.T) {
+	dir := t.TempDir()
+	content := "---\nid: \"[1.0.0]\"\ntitle: Deep\n---\n\n# H1\n###### H6\n"
+	if err := os.WriteFile(filepath.Join(dir, "a.mdx"), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	v := mdx.NewDefaultValidator()
+	v.MaxHeadingDepth = 3
+
+	outPath := filepath.Join(dir, "out.epub")
+	p, err := New(
+		WithSourceDir(dir),
+		WithValidator(v),
+		WithFormats(FormatEPUB),
+		WithOutputFile(outPath),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if buildErr := p.Build(context.Background()); buildErr != nil {
+		t.Errorf("Build should not fail on content warnings, got: %v", buildErr)
+	}
+}
+
+// TestWithFullConfigInvalidMarginErrors guards against silently parsing a
+// bad margin value as 0 (which would collapse the layout): an invalid
+// margin_* unit must be a hard config error.
+func TestWithFullConfigInvalidMarginErrors(t *testing.T) {
+	cfg := &config.Config{
+		Source: testSourceDir,
+		Render: config.RenderConfig{MarginTop: "10em"},
+	}
+	_, err := New(WithFullConfig(cfg))
+	if err == nil {
+		t.Fatal("expected error for invalid margin_top, got nil")
+	}
+	if !strings.Contains(err.Error(), "margin_top") {
+		t.Errorf("expected error to mention margin_top, got %q", err.Error())
+	}
+}
+
+// TestWithFullConfigInvalidTimeoutErrors guards against silently ignoring a
+// malformed render timeout: it must be a hard config error, not a no-op.
+func TestWithFullConfigInvalidTimeoutErrors(t *testing.T) {
+	cfg := &config.Config{
+		Source: testSourceDir,
+		Render: config.RenderConfig{Timeout: "forever"},
+	}
+	_, err := New(WithFullConfig(cfg))
+	if err == nil {
+		t.Fatal("expected error for invalid render timeout, got nil")
+	}
+	if !strings.Contains(err.Error(), "timeout") {
+		t.Errorf("expected error to mention timeout, got %q", err.Error())
 	}
 }

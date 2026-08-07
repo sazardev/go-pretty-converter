@@ -27,7 +27,8 @@ type Options struct {
 	// CSS, if set, replaces the bundled default stylesheet outright.
 	CSS string
 	// CoverImage, when set, becomes the book's cover: a standalone
-	// full-page image, first in reading order. Must be .png/.jpg/.jpeg.
+	// full-page image, first in reading order. Must be .png/.jpg/.jpeg/
+	// .svg/.webp.
 	CoverImage string
 }
 
@@ -216,8 +217,10 @@ func loadCoverImage(path string) (data []byte, file, mediaType string, err error
 		mediaType = "image/jpeg"
 	case ".svg":
 		mediaType = "image/svg+xml"
+	case ".webp":
+		mediaType = "image/webp"
 	default:
-		return nil, "", "", fmt.Errorf("cover image %s: unsupported format (expected .png, .jpg, .jpeg, or .svg)", path)
+		return nil, "", "", fmt.Errorf("cover image %s: unsupported format (expected .png, .jpg, .jpeg, .svg, or .webp)", path)
 	}
 
 	data, err = os.ReadFile(path)

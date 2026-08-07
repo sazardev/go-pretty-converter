@@ -209,7 +209,7 @@ func init() {
 	epubCmd.Flags().StringVar(&title, "title", "", "book title")
 	epubCmd.Flags().StringVar(&subtitle, "subtitle", "", "book subtitle")
 	epubCmd.Flags().StringVar(&author, "author", "", "book author")
-	epubCmd.Flags().StringVar(&coverImage, "cover-image", "", "custom cover image (.png/.jpg/.jpeg/.svg), full-bleed as the first page")
+	epubCmd.Flags().StringVar(&coverImage, "cover-image", "", "custom cover image (.png/.jpg/.jpeg/.svg/.webp), full-bleed as the first page")
 	epubCmd.Flags().StringVar(&epubLanguage, "language", "en", "book language (BCP-47 tag, e.g. en, es)")
 
 	epubCmd.Flags().StringVar(&themeName, "theme", defaultTheme, fmt.Sprintf("book theme (%s, or a custom theme name/path)", strings.Join(themeNames(), ", ")))

@@ -306,20 +306,33 @@ func TestWriteRejectsUnsupportedCoverFormat(t *testing.T) {
 	}
 }
 
-func TestWriteRejectsWebPCoverFormat(t *testing.T) {
+// TestWriteWebPCoverImage guards the parity between the PDF and EPUB cover
+// paths: build's --cover-image documents .webp, and epub must accept it too
+// rather than rejecting it after preflight already passed.
+func TestWriteWebPCoverImage(t *testing.T) {
 	dir := t.TempDir()
 	doc := mustParseDoc(t, dir, "a.mdx", "[1.0.0]", "One", "# One")
+
 	webpCover := filepath.Join(dir, "cover.webp")
-	if err := os.WriteFile(webpCover, []byte("not a real webp"), 0644); err != nil {
+	if err := os.WriteFile(webpCover, []byte("RIFF....WEBPVP8 "), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	opts := DefaultOptions()
 	opts.CoverImage = webpCover
 
-	err := Write([]*mdx.Document{doc}, opts, filepath.Join(dir, "out.epub"))
-	if err == nil {
-		t.Error("expected an error for WebP cover image (not supported in EPUB 3), got nil")
+	outPath := filepath.Join(dir, "out.epub")
+	if err := Write([]*mdx.Document{doc}, opts, outPath); err != nil {
+		t.Fatalf("Write with .webp cover: %v", err)
+	}
+
+	files := readZip(t, outPath)
+	if _, ok := files["OEBPS/images/cover.webp"]; !ok {
+		t.Error("expected OEBPS/images/cover.webp to be embedded")
+	}
+	opf := string(files["OEBPS/content.opf"])
+	if !strings.Contains(opf, "media-type=\"image/webp\"") {
+		t.Error(`expected content.opf to declare the webp cover with media-type="image/webp"`)
 	}
 }
 

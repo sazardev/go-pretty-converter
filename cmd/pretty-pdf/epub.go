@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	prettypdf "github.com/sazardev/go-pretty-pdf"
 	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
 	"github.com/sazardev/go-pretty-pdf/config"
 	"github.com/sazardev/go-pretty-pdf/epub"
@@ -23,9 +24,18 @@ func runEpub(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// --out beats the config file's output; when neither an explicit flag
+	// nor a config output is present, the default is out.epub. A config
+	// output ending in .pdf (the build default) maps to the .epub variant,
+	// mirroring how `build --format epub` derives its output path.
+	epubOutputPath := epubOutPath
+	if !cmd.Flags().Changed("out") && cfg.Output != "" {
+		epubOutputPath = resolveOutputPaths(cfg.Output, []prettypdf.OutputFormat{prettypdf.FormatEPUB})[prettypdf.FormatEPUB]
+	}
+
 	if !quiet {
 		fmt.Println("  " + output.KeyValue("Source", cfg.Source))
-		fmt.Println("  " + output.KeyValue("Output", epubOutPath))
+		fmt.Println("  " + output.KeyValue("Output", epubOutputPath))
 		fmt.Println()
 	}
 
@@ -75,16 +85,16 @@ func runEpub(cmd *cobra.Command, args []string) error {
 	opts.CSS = css
 
 	writeSpinner := output.StartSpinner("Writing EPUB...")
-	if err := epub.Write(docs, opts, epubOutPath); err != nil {
+	if err := epub.Write(docs, opts, epubOutputPath); err != nil {
 		writeSpinner.Fail(err.Error())
 		return fmt.Errorf("writing EPUB: %w", err)
 	}
 
 	size := "unknown"
-	if info, statErr := os.Stat(epubOutPath); statErr == nil {
+	if info, statErr := os.Stat(epubOutputPath); statErr == nil {
 		size = formatBytes(info.Size())
 	}
-	writeSpinner.Done(fmt.Sprintf("Wrote %s (%s)", epubOutPath, size))
+	writeSpinner.Done(fmt.Sprintf("Wrote %s (%s)", epubOutputPath, size))
 
 	return nil
 }

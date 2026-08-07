@@ -15,6 +15,7 @@ import (
 	"github.com/sazardev/go-pretty-pdf/chromemgr"
 	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
 	"github.com/sazardev/go-pretty-pdf/config"
+	"github.com/sazardev/go-pretty-pdf/mdx"
 	"github.com/sazardev/go-pretty-pdf/version"
 )
 
@@ -113,12 +114,20 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	pipeline.Start("Running validation...")
 	allErrs := pdf.ValidateAll(docs)
-	if len(allErrs) > 0 {
-		for _, e := range allErrs {
+	var hardErrs []mdx.ValidationError
+	for _, e := range allErrs {
+		if e.Field == mdx.ContentField {
+			fmt.Printf("    %s\n", output.Warn(e.Error()))
+		} else {
+			hardErrs = append(hardErrs, e)
+		}
+	}
+	if len(hardErrs) > 0 {
+		for _, e := range hardErrs {
 			fmt.Printf("    %s\n", e)
 		}
-		pipeline.Fail("Running validation...", fmt.Sprintf("%d error(s)", len(allErrs)))
-		return fmt.Errorf("validation failed: %d error(s)", len(allErrs))
+		pipeline.Fail("Running validation...", fmt.Sprintf("%d error(s)", len(hardErrs)))
+		return fmt.Errorf("validation failed: %d error(s)", len(hardErrs))
 	}
 	pipeline.Done("Running validation...")
 
@@ -137,7 +146,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			pipeline.Start("Rendering PDF...")
 			pdfOpt := prettypdf.WithOutputFile(pdfPath)
 			pdfOpt(pdf)
-			if err := pdf.Render(html); err != nil {
+			if err := pdf.RenderWithContext(cmd.Context(), html); err != nil {
 				pipeline.Fail("Rendering PDF...", err.Error())
 				return fmt.Errorf("rendering PDF: %w", err)
 			}
@@ -266,11 +275,19 @@ func runBuildJSON(cmd *cobra.Command) error {
 	}
 
 	allErrs := pdf.ValidateAll(docs)
-	if len(allErrs) > 0 {
-		for _, e := range allErrs {
+	var hardErrs []mdx.ValidationError
+	for _, e := range allErrs {
+		if e.Field == mdx.ContentField {
+			fmt.Fprintf(os.Stderr, "%s\n", e)
+		} else {
+			hardErrs = append(hardErrs, e)
+		}
+	}
+	if len(hardErrs) > 0 {
+		for _, e := range hardErrs {
 			fmt.Fprintf(os.Stderr, "%s\n", e)
 		}
-		return fmt.Errorf("validation failed: %d error(s)", len(allErrs))
+		return fmt.Errorf("validation failed: %d error(s)", len(hardErrs))
 	}
 
 	for _, f := range formats {
@@ -283,7 +300,7 @@ func runBuildJSON(cmd *cobra.Command) error {
 			}
 			pdfOpt := prettypdf.WithOutputFile(pdfPath)
 			pdfOpt(pdf)
-			if composeErr = pdf.Render(html); composeErr != nil {
+			if composeErr = pdf.RenderWithContext(cmd.Context(), html); composeErr != nil {
 				return fmt.Errorf("rendering PDF: %w", composeErr)
 			}
 		case prettypdf.FormatEPUB:
