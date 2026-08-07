@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Ten new quality-audit checks**, expanding the automatic PDF audit from 6 rules to 16:
+  - `overflow-y` — content taller than a fixed-height box, clipped on print.
+  - `image-low-res` — an image rendered at more than ~2x its intrinsic width, so it will look pixelated on paper.
+  - `broken-anchor` — an `<a href="#fragment">` with no matching element (dead in-document links break the TOC and PDF bookmarks).
+  - `duplicate-id` — the same `id` attribute used twice.
+  - `toc-mismatch` — a TOC entry with no target id, or a body section with no TOC entry.
+  - `font-load-fail` — a requested font family the browser can't resolve (missing local font, or a Google Font blocked by the default network lockdown).
+  - `page-break-inside-risk` — a table/code block without `page-break-inside: avoid`, which print can slice mid-row.
+  - `line-break-risk` — a block with `orphans`/`widows` below 2, which can strand a single line at the top/bottom of a page.
+  - `unused-component` — a component registered via `WithComponent()` that no document used (a typo'd tag is the usual cause).
+  - `pdf-eof-missing` — the finished PDF lacks its `%%EOF` marker (truncated/corrupt output).
+- **`render.SeverityError`** and the corrupt-output checks now report at `error` severity, so callers can distinguish "the PDF is genuinely corrupt" from advisory layout warnings (`pdf-empty`, `pdf-eof-missing`, `page-count`).
+- **WCAG 2.2 contrast thresholds** in `low-contrast`: 4.5:1 for normal text and 3:1 for large text (≥18.66px, or ≥14px bold), replacing the old flat 2.2:1 cutoff that only caught obviously unreadable pairs.
+- **`mdx.Parser.ComponentUsage()` / `ComponentNames()` / `ResetComponentUsage()`** so callers can inspect which custom components a parse actually exercised, and **`render` PDF-byte auditing** now tolerates Chrome's trailing-newline `%%EOF`.
+
+### Changed
+
+- The audit report's `unused-component` finding is attached to `PDF.LastAudit()` after `Build`, so the same report carries both visual and authoring signals.
+
+### Fixed
+
+- The `duplicate-id` message used the raw DOM node in its text; it now names both elements (`#dup` on … (also on `#dup`)).
+- The new `%%EOF` check originally flagged Chrome's well-formed output because Chrome appends a newline after the marker; the check now tolerates trailing whitespace.
+
 ## [0.9.0] - 2026-07-15
 
 ### Added

@@ -591,6 +591,7 @@ func (p *PDF) Build(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("rendering PDF: %w", err)
 			}
+			report = appendUnusedComponentIssues(report, p)
 			p.lastAudit = report
 		case FormatEPUB:
 			epubPath := p.epubOutputPath()
@@ -707,6 +708,46 @@ func (p *PDF) RenderWithContext(ctx context.Context, html string) error {
 // render.AuditReport and render/audit.go for what it checks.
 func (p *PDF) LastAudit() *render.AuditReport {
 	return p.lastAudit
+}
+
+// checkUnusedComponent is the audit check name for a custom component
+// registered via WithComponent() that no document used. Shared by the
+// audit report and its tests.
+const checkUnusedComponent = "unused-component"
+
+// appendUnusedComponentIssues augments a render audit report with one
+// "unused-component" warning per custom component registered via
+// WithComponent() that no parsed document actually used. It's a pure
+// authoring check (nothing about the rendered pixels), so it can't live in
+// the DOM audit — but it belongs in the same report so callers see every
+// quality signal in one place. Builtin components (DeepDive, Warning,
+// Axiom) are excluded: they're registered by default and a book that never
+// uses them is normal, not a mistake.
+func appendUnusedComponentIssues(report *render.AuditReport, p *PDF) *render.AuditReport {
+	if report == nil {
+		report = &render.AuditReport{}
+	}
+
+	builtin := map[string]bool{
+		"DeepDive": true,
+		"Warning":  true,
+		"Axiom":    true,
+	}
+
+	usage := p.parser.ComponentUsage()
+	for _, name := range p.parser.ComponentNames() {
+		if builtin[name] {
+			continue
+		}
+		if usage[name] == 0 {
+			report.Issues = append(report.Issues, render.Issue{
+				Check:    checkUnusedComponent,
+				Severity: render.SeverityWarning,
+				Message:  fmt.Sprintf("component <%s> was registered via WithComponent() but no document used it — check the tag spelling in your MDX", name),
+			})
+		}
+	}
+	return report
 }
 
 func (p *PDF) logVerbose(msg string) {

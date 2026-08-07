@@ -84,7 +84,7 @@ MD/MDX files → Parse frontmatter & markdown → Transpile components → Compo
 1. **Parse** — goldmark parses `.md`/`.mdx` files with YAML frontmatter. Fenced code blocks (` ```go `, ` ```python `, ...) are syntax-highlighted via [Chroma](https://github.com/alecthomas/chroma), using a style paired to each theme's tone (e.g. Dracula for the `dark` theme, the Gruvbox style for the `gruvbox` theme, GitHub's light style everywhere else)
 2. **Transpile** — custom components (`<DeepDive>`, `<Warning>`, `<Axiom>`) become styled HTML
 3. **Compose** — HTML assembled with embedded template + CSS + auto-generated Table of Contents
-4. **Render** — headless Chrome prints to PDF with headers, footers, and PDF bookmarks, then an automatic quality audit checks the result for overflowing content, broken images, low-contrast text, near-empty output, and headings at risk of being clipped by the print engine (see `pretty-pdf build`'s `Warnings` output, or `render.RenderToPDFWithAudit` in the library API)
+4. **Render** — headless Chrome prints to PDF with headers, footers, and PDF bookmarks, then an automatic quality audit checks the result for overflowing content, broken images, low-contrast text, near-empty output, dead links, duplicate ids, broken TOC entries, unloaded fonts, at-risk page breaks, and headings at risk of being clipped by the print engine (see `pretty-pdf build`'s `Warnings` output, or `render.RenderToPDFWithAudit` in the library API)
 
 Documents are sorted by their `[X.Y.Z]` frontmatter ID, not filename.
 

@@ -106,6 +106,25 @@ func (p *Parser) RegisterComponent(name string, handler ComponentHandler) {
 	p.components.Register(name, handler)
 }
 
+// ComponentUsage reports how many times each registered component matched
+// during parsing since the last ResetComponentUsage. Useful for detecting
+// custom components registered via WithComponent() that no document uses.
+func (p *Parser) ComponentUsage() map[string]int {
+	return p.components.Usage()
+}
+
+// ComponentNames lists every registered component name.
+func (p *Parser) ComponentNames() []string {
+	return p.components.Names()
+}
+
+// ResetComponentUsage zeroes the component usage counters — call before
+// starting a fresh ParseDir on a shared Parser so counts don't leak across
+// builds.
+func (p *Parser) ResetComponentUsage() {
+	p.components.ResetUsage()
+}
+
 func (p *Parser) SetVars(vars map[string]string) {
 	p.varsMu.Lock()
 	defer p.varsMu.Unlock()

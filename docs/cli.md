@@ -85,16 +85,26 @@ Chrome is only required when `pdf` is in the format list. An `epub`-only build (
 
 #### PDF Quality Audit
 
-Right after rendering, `build` runs a best-effort audit of the composed document and reports anything worth a second look — it never fails the build, it's advisory. The final summary's `Warnings` count reflects this (and `--json`'s `warnings` array lists them in full). Checks:
+Right after rendering, `build` runs a best-effort audit of the composed document and reports anything worth a second look — it's advisory for DOM/layout findings and only reports at `error` severity for output that's actually corrupt. The final summary's `Warnings` count reflects this (and `--json`'s `warnings` array lists them in full). Checks:
 
 | Check | Flags |
 |---|---|
 | `overflow-x` | Content wider than its box (long code lines, wide tables/images) that print will clip instead of wrap |
+| `overflow-y` | Content taller than a fixed-height box, so it clips when printed |
 | `broken-image` | An `<img>` that never resolved to real pixels |
+| `image-low-res` | An image displayed at more than ~2x its intrinsic size, so it will look pixelated on paper |
 | `empty-content` | The document has almost no visible text — usually a sign composition silently produced nothing |
-| `low-contrast` | Visible text whose color is too close to its effective background to read comfortably |
+| `low-contrast` | Text whose contrast ratio fails WCAG 2.2 (4.5:1 normal, 3:1 large text) against its effective background |
 | `heading-clip-risk` | A heading that forces a page break without enough top margin to clear the print engine's header/margin strip, so its top would render clipped |
+| `broken-anchor` | An `<a href="#fragment">` with no matching element — dead in-document links break TOC and PDF bookmarks |
+| `duplicate-id` | The same `id` attribute used twice, which breaks anchors, the TOC, and PDF bookmarks |
+| `toc-mismatch` | The TOC links to an id that doesn't exist, or a body section heading has no TOC entry |
+| `font-load-fail` | A font family the page requests could not be loaded (missing local font, or a Google Font blocked by the default network lockdown) and will silently fall back |
+| `page-break-inside-risk` | A table/code block without `page-break-inside: avoid`, so print can slice it mid-row |
+| `line-break-risk` | A block with `orphans`/`widows` below 2, so a single line can be stranded at the top/bottom of a page |
 | `page-count` | The generated PDF has no detectable pages — the output file may be empty or corrupt |
+| `pdf-eof-missing` | The generated PDF is missing its `%%EOF` marker — the output may be truncated or corrupt |
+| `unused-component` | A component registered via `WithComponent()` was never used in any document — check the tag spelling |
 
 The audit reads the composed HTML before it's handed to the print engine, so it can't see two things that live purely inside Chrome's own print pipeline: the fixed ~0.2in header/footer inset and the actual page-break slicing (both covered by `base.css`'s own layout rules instead — see the CHANGELOG for the bugs those rules exist to prevent).
 

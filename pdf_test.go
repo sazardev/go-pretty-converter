@@ -204,6 +204,68 @@ func TestWithComponentRegisters(t *testing.T) {
 	}
 }
 
+func TestUnusedComponentReported(t *testing.T) {
+	p, err := New(WithComponent("Callout", func(attrs map[string]string, inner string) string {
+		return "<div class=\"callout\">" + inner + "</div>"
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.mdx")
+	// The document never uses <Callout> — it must be flagged as unused.
+	content := "---\nid: \"[1.0.0]\"\ntitle: Test\n---\n\n# Hello\n\nJust text, no custom components.\n"
+	if writeErr := os.WriteFile(path, []byte(content), 0644); writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	docs, err := p.parser.ParseDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = docs // parsed docs exercise the registry; the report is what we assert
+
+	report := appendUnusedComponentIssues(&render.AuditReport{}, p)
+	if report == nil {
+		t.Fatal("expected non-nil report")
+	}
+	found := false
+	for _, i := range report.Issues {
+		if i.Check == checkUnusedComponent && strings.Contains(i.Message, "Callout") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected unused-component issue for Callout, got %v", report.Issues)
+	}
+}
+
+func TestUsedComponentNotReported(t *testing.T) {
+	p, err := New(WithComponent("Callout", func(attrs map[string]string, inner string) string {
+		return "<div class=\"callout\">" + inner + "</div>"
+	}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.mdx")
+	content := "---\nid: \"[1.0.0]\"\ntitle: Test\n---\n\n<Callout>used</Callout>\n"
+	if writeErr := os.WriteFile(path, []byte(content), 0644); writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	if _, err := p.parser.ParseDir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	report := appendUnusedComponentIssues(&render.AuditReport{}, p)
+	for _, i := range report.Issues {
+		if i.Check == checkUnusedComponent {
+			t.Errorf("expected no unused-component issue, got %v", i)
+		}
+	}
+}
+
 func TestWithConfig(t *testing.T) {
 	cfg := &config.Config{
 		Source:   testSourceDir,

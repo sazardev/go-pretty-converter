@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -15,11 +16,13 @@ type ComponentHandler func(attrs map[string]string, innerHTML string) string
 type ComponentRegistry struct {
 	mu       sync.RWMutex
 	handlers map[string]ComponentHandler
+	usage    map[string]int
 }
 
 func NewComponentRegistry() *ComponentRegistry {
 	r := &ComponentRegistry{
 		handlers: make(map[string]ComponentHandler),
+		usage:    make(map[string]int),
 	}
 	r.Register("DeepDive", deepDiveHandler)
 	r.Register("Warning", warningHandler)
@@ -31,6 +34,48 @@ func (r *ComponentRegistry) Register(name string, handler ComponentHandler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.handlers[name] = handler
+}
+
+// Usage reports how many times each registered component name matched in
+// Transpile since the registry was created (or since the last ResetUsage).
+// Callers use it to detect components that were registered via
+// WithComponent() but never used in any document — a common authoring slip
+// that wastes setup and may indicate a typo'd tag.
+func (r *ComponentRegistry) Usage() map[string]int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make(map[string]int, len(r.usage))
+	for name, n := range r.usage {
+		out[name] = n
+	}
+	return out
+}
+
+// Names lists every registered component name (builtin and custom).
+func (r *ComponentRegistry) Names() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]string, 0, len(r.handlers))
+	for name := range r.handlers {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// ResetUsage zeroes the usage counters (used between independent builds on
+// the same Parser).
+func (r *ComponentRegistry) ResetUsage() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.usage = make(map[string]int)
+}
+
+// markUsed records that a component matched during Transpile.
+func (r *ComponentRegistry) markUsed(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.usage[name]++
 }
 
 // maxComponentNestingDepth bounds the innermost-first unwinding loop in
@@ -53,6 +98,7 @@ func (r *ComponentRegistry) Transpile(input string) string {
 			matches := re.FindStringSubmatch(match)
 			attrs := parseComponentAttrs(matches[1])
 			content := strings.TrimSpace(matches[2])
+			r.markUsed(name)
 			return handler(attrs, content)
 		}
 		// The non-greedy (.*?) below only ever matches a pair with no
