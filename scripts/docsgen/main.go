@@ -26,6 +26,7 @@ var siteJS string
 
 const (
 	siteBaseURL     = "https://sazardev.github.io/go-pretty-pdf/"
+	siteHost        = "sazardev.github.io"
 	siteRepoURL     = "https://github.com/sazardev/go-pretty-pdf"
 	siteTitle       = "go-pretty-pdf — Turn Markdown into Beautiful, Print-Ready PDFs (Go)"
 	siteDescription = "go-pretty-pdf turns a folder of Markdown/MDX into a beautifully typeset, print-ready PDF via headless Chrome — as a Go library or CLI. No LaTeX, no design tools."
@@ -75,7 +76,9 @@ func main() {
 		"robots.txt":       robotsTXT(),
 		"sitemap.xml":      sitemapXML(),
 		"site.webmanifest": webManifest(),
-		"llms.txt":         llmsTXT(),
+		llmsFileName():     llmsTXT(),
+		"llms-full.txt":    llmsFullTXT(),
+		"humans.txt":       humansTXT(),
 		"favicon.svg":      faviconSVG(),
 	}
 	for name, content := range textAssets {
@@ -324,6 +327,31 @@ func stripHTMLTags(s string) string {
 	return regexp.MustCompile(`<[^>]+>`).ReplaceAllString(s, "")
 }
 
+// breadcrumbJSONLD is the BreadcrumbList structured data for docs.html,
+// giving crawlers an explicit hierarchy instead of guessing at it from
+// links. Both landing and docs reference the same path so breadcrumb
+// continuity holds across the two pages.
+func breadcrumbJSONLD() string {
+	return `{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "go-pretty-pdf",
+      "item": "` + siteBaseURL + `"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Documentation",
+      "item": "` + siteBaseURL + `docs.html"
+    }
+  ]
+}`
+}
+
 func buildDocsHTML(sections []Section) string {
 	n := len(sections)
 	navItems := make([]string, n)
@@ -354,14 +382,18 @@ func buildDocsHTML(sections []Section) string {
 <html lang="en" data-site-theme="classic">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%s</title>
 <meta name="description" content="%s">
 <meta name="keywords" content="%s">
 <meta name="author" content="sazardev">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-<meta name="googlebot" content="index, follow">
+<meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot-news" content="noindex">
 <link rel="canonical" href="%s">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="format-detection" content="telephone=no, email=no, address=no">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
@@ -369,23 +401,36 @@ func buildDocsHTML(sections []Section) string {
 <link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="application-name" content="go-pretty-pdf">
 
-<meta property="og:type" content="website">
+<meta property="og:type" content="article">
 <meta property="og:site_name" content="go-pretty-pdf">
 <meta property="og:title" content="%s">
 <meta property="og:description" content="%s">
 <meta property="og:url" content="%s">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="%sog-image.png">
+<meta property="og:image:url" content="%sog-image.png">
+<meta property="og:image:secure_url" content="%sog-image.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="go-pretty-pdf &mdash; write Markdown, ship a book.">
-<meta property="og:locale" content="en_US">
+<meta property="og:image:alt" content="go-pretty-pdf — write Markdown, ship a book.">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%s">
 <meta name="twitter:description" content="%s">
 <meta name="twitter:image" content="%sog-image.png">
+<meta name="twitter:image:alt" content="go-pretty-pdf — write Markdown, ship a book.">
 
+<meta name="twitter:site" content="@sazardev">
+<meta name="twitter:creator" content="@sazardev">
+<meta name="twitter:domain" content="%s">
+
+<script type="application/ld+json">%s</script>
 <script type="application/ld+json">%s</script>
 
 <style>
@@ -425,25 +470,48 @@ func buildDocsHTML(sections []Section) string {
 </html>`,
 		docsTitle, siteDescription, siteKeywords, docsURL,
 		docsTitle, siteDescription, docsURL, siteBaseURL,
+		siteBaseURL, siteBaseURL,
 		docsTitle, siteDescription, siteBaseURL,
-		jsonLD(),
+		siteHost,
+		jsonLD(), breadcrumbJSONLD(),
 		siteCSS+"\n"+generatedThemeCSS(), strings.Join(navItems, "\n    "), themeSwitcherHTML(), strings.Join(bodyParts, "\n  "), commandPaletteHTML(), siteJS)
 }
 
 // jsonLD returns the page's structured data: a WebSite entry plus a
-// SoftwareApplication entry describing the CLI/library, so search engines
-// and LLM crawlers can identify go-pretty-pdf as a concrete, installable
-// open-source tool rather than just a prose page.
+// SoftwareApplication entry describing the CLI/library, an Organization
+// entry for the project itself, and (via faqJSONLD) rich results for the
+// landing page's FAQ. This is what lets search engines and LLM crawlers
+// identify go-pretty-pdf as a concrete, installable, open-source tool
+// rather than just a prose page, and qualifies the landing page for FAQ
+// rich results.
 func jsonLD() string {
 	return `{
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "Organization",
+      "name": "go-pretty-pdf",
+      "url": "` + siteBaseURL + `",
+      "logo": "` + siteBaseURL + `favicon.svg",
+      "description": "` + siteDescription + `",
+      "foundingDate": "2026",
+      "sameAs": [
+        "` + siteRepoURL + `",
+        "` + siteRepoURL + `/discussions",
+        "` + siteRepoURL + `/issues"
+      ]
+    },
+    {
       "@type": "WebSite",
       "name": "go-pretty-pdf",
       "url": "` + siteBaseURL + `",
       "description": "` + siteDescription + `",
-      "inLanguage": "en"
+      "inLanguage": "en",
+      "publisher": {
+        "@type": "Organization",
+        "name": "sazardev",
+        "url": "https://github.com/sazardev"
+      }
     },
     {
       "@type": "SoftwareApplication",
@@ -451,20 +519,104 @@ func jsonLD() string {
       "description": "` + siteDescription + `",
       "url": "` + siteBaseURL + `",
       "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Document Generation",
       "operatingSystem": "Linux, macOS, Windows",
       "programmingLanguage": "Go",
+      "softwareVersion": "latest",
+      "requirements": "Go 1.26+; Chrome or Chromium for PDF rendering (auto-downloaded)",
+      "featureList": [
+        "Markdown/MDX to PDF and EPUB",
+        "17 built-in print themes",
+        "Headless Chrome rendering",
+        "Automatic table of contents and PDF bookmarks",
+        "Syntax highlighting via Chroma",
+        "Print-ready trim sizes (6x9in, A5, mm/in)",
+        "Custom .theme.yml themes",
+        "Automatic quality audit"
+      ],
       "license": "` + siteRepoURL + `/blob/master/LICENSE",
       "codeRepository": "` + siteRepoURL + `",
       "downloadUrl": "` + siteRepoURL + `/releases",
+      "installUrl": "` + siteRepoURL + `/releases/latest",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "USD",
+        "category": "Free open-source software"
       },
       "author": {
         "@type": "Person",
         "name": "sazardev",
         "url": "https://github.com/sazardev"
+      }
+    }
+  ]
+}`
+}
+
+// faqJSONLD is the FAQPage structured data for the landing page. It must
+// stay in sync with the on-page FAQ section in landing.go — the questions
+// here are the same ones a visitor actually reads, so the rich result
+// Google shows never diverges from what's on screen.
+func faqJSONLD() string {
+	return `{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does go-pretty-pdf require LaTeX?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. go-pretty-pdf renders PDFs from Markdown/MDX using headless Chrome — no LaTeX, no separate design tool, nothing to install but the binary."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does go-pretty-pdf require a manual Chrome install?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usually not. On first render chromemgr auto-downloads a headless Chrome build if no system Chrome or --chrome-path is found. Only on linux/arm64 you must provide Chrome via --chrome-path."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I build an EPUB without Chrome?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The 'epub' command builds EPUB 3 output from the same Markdown with no Chrome or Chromium required at all."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What input file formats are supported?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Markdown (.md), MDX (.mdx), and even bare .txt files. Documents are ordered by their [X.Y.Z] frontmatter id, not by filename; missing frontmatter gets an id/title generated from the filename."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How many built-in themes does go-pretty-pdf ship?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "17 built-in themes ranging from minimal and modern to Gruvbox, LaTeX-style academic, corporate, and government letterhead, plus a custom .theme.yml theme system and per-theme color/font overrides."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I build both PDF and EPUB from one source?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. A single command (--formats pdf,epub) builds both formats from the same Markdown in one pass — no separate pipeline to maintain."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is go-pretty-pdf free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. go-pretty-pdf is MIT-licensed, open source, with no paid tier. Every feature ships in the core binary."
       }
     }
   ]

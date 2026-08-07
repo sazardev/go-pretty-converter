@@ -49,6 +49,8 @@ func generateRasterAssets(outDir string) {
 	}{
 		{"apple-touch-icon.png", 180, 180, appleTouchIconHTML()},
 		{"favicon-32.png", 32, 32, appleTouchIconHTML()},
+		{"icon-192.png", 192, 192, appleTouchIconHTML()},
+		{"icon-512.png", 512, 512, appleTouchIconHTML()},
 		{"og-image.png", 1200, 630, ogImageHTML()},
 	}
 

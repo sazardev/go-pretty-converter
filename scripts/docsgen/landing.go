@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sazardev/go-pretty-pdf/theme"
 )
@@ -140,37 +141,56 @@ func buildLandingHTML() string {
 <html lang="en" data-theme="%s">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%s</title>
 <meta name="description" content="%s">
 <meta name="keywords" content="%s">
 <meta name="author" content="sazardev">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-<meta name="googlebot" content="index, follow">
+<meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot-news" content="noindex">
 <link rel="canonical" href="%s">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="format-detection" content="telephone=no, email=no, address=no">
+<meta name="rating" content="general">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#282828">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="application-name" content="go-pretty-pdf">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="go-pretty-pdf">
 <meta property="og:title" content="%s">
 <meta property="og:description" content="%s">
 <meta property="og:url" content="%s">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="es_ES">
 <meta property="og:image" content="%sog-image.png">
+<meta property="og:image:url" content="%sog-image.png">
+<meta property="og:image:secure_url" content="%sog-image.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="go-pretty-pdf &mdash; write Markdown, ship a beautiful PDF.">
-<meta property="og:locale" content="en_US">
+<meta property="og:image:alt" content="go-pretty-pdf — write Markdown, ship a beautiful PDF.">
+<meta property="og:updated_time" content="%s">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%s">
 <meta name="twitter:description" content="%s">
 <meta name="twitter:image" content="%sog-image.png">
+<meta name="twitter:image:alt" content="go-pretty-pdf — write Markdown, ship a beautiful PDF.">
+<meta name="twitter:site" content="@sazardev">
+<meta name="twitter:creator" content="@sazardev">
+<meta name="twitter:domain" content="%s">
 
+<script type="application/ld+json">%s</script>
 <script type="application/ld+json">%s</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -190,7 +210,9 @@ func buildLandingHTML() string {
     <nav class="links">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
+      <a href="#cli">Commands</a>
       <a href="#themes">Themes</a>
+      <a href="#faq">FAQ</a>
       <a href="docs.html">Docs</a>
       <a href="docs.html#changelog">Changelog</a>
     </nav>
@@ -297,6 +319,27 @@ func buildLandingHTML() string {
   </div>
 </section>
 
+<section id="cli">
+  <div class="container">
+    <div class="section-head center reveal">
+      <p class="kicker">The CLI</p>
+      <h2>Every command, right at your fingertips.</h2>
+      <p>The whole tool is one binary with a handful of commands — everything below works on Linux, macOS, and Windows.</p>
+    </div>
+    <div class="cmd-grid reveal">
+      <div class="cmd"><code>pretty-pdf init my-book</code><span>Scaffold a book: skeleton MDX + config.</span></div>
+      <div class="cmd"><code>pretty-pdf build</code><span>Render a print-ready PDF (and EPUB with --formats).</span></div>
+      <div class="cmd"><code>pretty-pdf check</code><span>Validate source only — no Chrome needed.</span></div>
+      <div class="cmd"><code>pretty-pdf epub</code><span>Build an EPUB 3, no Chrome required.</span></div>
+      <div class="cmd"><code>pretty-pdf serve</code><span>Live HTML preview with live reload.</span></div>
+      <div class="cmd"><code>pretty-pdf watch</code><span>Rebuild the PDF on every save.</span></div>
+      <div class="cmd"><code>pretty-pdf theme list</code><span>Browse 17 built-in themes or add your own.</span></div>
+      <div class="cmd"><code>pretty-pdf completion</code><span>Shell completions for bash, zsh, fish.</span></div>
+    </div>
+    <p class="cmd-more"><a href="docs.html#cli-reference" class="text-cta">Full CLI reference &rarr;</a></p>
+  </div>
+</section>
+
 <section id="themes">
   <div class="container">
     <div class="section-head center reveal">
@@ -333,6 +376,58 @@ func buildLandingHTML() string {
   </div>
 </section>
 
+<section id="stats" class="stats-band">
+  <div class="container">
+    <div class="stats-grid reveal">
+      <div class="stat"><span class="stat-num">17</span><span class="stat-label">built-in themes</span></div>
+      <div class="stat"><span class="stat-num">2</span><span class="stat-label">output formats</span></div>
+      <div class="stat"><span class="stat-num">0</span><span class="stat-label">LaTeX or design tools</span></div>
+      <div class="stat"><span class="stat-num">100%%</span><span class="stat-label">free &amp; MIT licensed</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="container">
+    <div class="section-head center reveal">
+      <p class="kicker">FAQ</p>
+      <h2>Frequently asked questions</h2>
+      <p>Straight answers about how go-pretty-pdf works, what it needs, and what it can build.</p>
+    </div>
+    <div class="faq-grid reveal">
+      <details class="faq-item">
+        <summary>Does go-pretty-pdf require LaTeX?</summary>
+        <p>No. PDFs are rendered from Markdown/MDX via headless Chrome &mdash; no LaTeX, no separate design tool, nothing to install but the binary.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does it require a manual Chrome install?</summary>
+        <p>Usually not. On first render, <code>chromemgr</code> auto-downloads a headless Chrome build if no system Chrome or <code>--chrome-path</code> is found. Only on <code>linux/arm64</code> you must provide Chrome yourself.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I build an EPUB without Chrome?</summary>
+        <p>Yes. The <code>epub</code> command builds EPUB 3 output from the same Markdown with no Chrome or Chromium required.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What input file formats are supported?</summary>
+        <p><code>.md</code>, <code>.mdx</code>, and even bare <code>.txt</code> files. Documents are ordered by their <code>[X.Y.Z]</code> frontmatter id, not by filename.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How many themes are built in?</summary>
+        <p>17 themes &mdash; from minimal and modern to Gruvbox, LaTeX-style academic, corporate, and government letterhead &mdash; plus a custom <code>.theme.yml</code> system and per-theme color/font overrides.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I build PDF and EPUB from one source?</summary>
+        <p>Yes. A single command (<code>--formats pdf,epub</code>) builds both from the same Markdown in one pass &mdash; no separate pipeline.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is go-pretty-pdf free?</summary>
+        <p>Yes &mdash; MIT licensed, open source, no paid tier. Every feature ships in the core binary.</p>
+      </details>
+    </div>
+    <p class="faq-more"><a href="docs.html" class="text-cta">Read the full documentation &rarr;</a></p>
+  </div>
+</section>
+
 <section class="footer-cta">
   <div class="container">
     <div class="reveal" style="display:flex;flex-direction:column;align-items:center">
@@ -349,9 +444,7 @@ func buildLandingHTML() string {
       </div>
     </div>
   </div>
-</section>
-
-<footer class="site-footer">
+</section><footer class="site-footer">
   <div class="container">
     <div class="footer-grid">
       <div class="footer-col footer-brand">
@@ -376,9 +469,11 @@ func buildLandingHTML() string {
 </html>`,
 		landingDefaultTheme,
 		siteTitle, siteDescription, siteKeywords, siteBaseURL,
-		siteTitle, siteDescription, siteBaseURL, siteBaseURL,
+		siteTitle, siteDescription, siteBaseURL, siteBaseURL, siteBaseURL, siteBaseURL,
+		time.Now().UTC().Format(time.RFC3339),
 		siteTitle, siteDescription, siteBaseURL,
-		jsonLD(),
+		siteHost,
+		jsonLD(), faqJSONLD(),
 		landingCSS, landingThemeCSS(),
 		themeSwatchSpans(mustTheme(landingDefaultTheme)), landingDefaultTheme, landingThemeDropdownOptions(),
 		siteRepoURL,
