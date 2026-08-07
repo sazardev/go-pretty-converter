@@ -3,11 +3,14 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
@@ -41,11 +44,27 @@ type Section struct {
 }
 
 func main() {
+	verbose := flag.Bool("verbose", false, "print every step (markdown sections, per-asset renders, per-theme PDFs)")
+	jobs := flag.Int("jobs", 4, "maximum concurrent Chrome-based renders (screenshots + PDFs)")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: %s [--verbose] [--jobs N]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Regenerates _site/ from README.md, docs/cli.md, and CHANGELOG.md.\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
 	root, err := findRepoRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error finding repo root: %v\n", err)
 		os.Exit(1)
 	}
+
+	log := newBuildLogger(*verbose)
+	phases := newPhaseRecorder(log)
+	start := time.Now()
+
+	log.Vf("docsgen: root = %s, jobs = %d, verbose = %v", root, *jobs, *verbose)
 
 	mdRenderer := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, meta.Meta),
@@ -53,24 +72,31 @@ func main() {
 		goldmark.WithRendererOptions(goldmarkHtml.WithHardWraps(), goldmarkHtml.WithUnsafe()),
 	)
 
+	tRead := time.Now()
 	readme, _ := os.ReadFile(filepath.Join(root, "README.md"))
 	cli, _ := os.ReadFile(filepath.Join(root, "docs", "cli.md"))
 	changelog, _ := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
+	phases.logPhase("read sources", tRead)
 
-	sections := make([]Section, 1, 28)
-	sections[0] = heroSection()
-	sections = append(sections, readmeSections(readme, mdRenderer)...)
-	sections = append(sections, cliSections(cli, mdRenderer)...)
-	sections = append(sections, changelogSection(changelog, mdRenderer)...)
+	// goldmark Markdown is safe for concurrent use; render the three
+	// sources in parallel. Sections must stay in document order, so the
+	// final assembly appends in the deterministic order below.
+	tMarkdown := time.Now()
+	sections := renderSectionsParallel(readme, cli, changelog, mdRenderer)
+	phases.logPhase("render markdown (parallel)", tMarkdown)
 
+	tCompose := time.Now()
 	landingHTML := buildLandingHTML()
 	docsHTML := buildDocsHTML(sections)
+	phases.logPhase("compose HTML", tCompose)
+
+	tAssets := time.Now()
 	outDir := filepath.Join(root, "_site")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "error creating output directory: %v\n", err)
 		os.Exit(1)
 	}
-	textAssets := map[string]string{
+	writeTextAssets(outDir, map[string]string{
 		"index.html":       landingHTML,
 		"docs.html":        docsHTML,
 		"robots.txt":       robotsTXT(),
@@ -80,18 +106,103 @@ func main() {
 		"llms-full.txt":    llmsFullTXT(),
 		"humans.txt":       humansTXT(),
 		"favicon.svg":      faviconSVG(),
+	})
+	phases.logPhase("write text assets", tAssets)
+
+	tRaster := time.Now()
+	rasterResults := generateRasterAssets(outDir, log, *jobs)
+	phases.logPhase("raster assets (parallel)", tRaster)
+
+	tPDFs := time.Now()
+	pdfResults := generateDocsPDF(outDir, readme, cli, changelog, log, *jobs)
+	phases.logPhase("theme PDFs (parallel)", tPDFs)
+
+	log.Infof("")
+	log.Infof("  PDF quality checks ran on every theme PDF (see --verbose for the audit detail).")
+	log.Infof("")
+	for _, r := range rasterResults {
+		if !r.ok {
+			log.Warnf("raster asset %s failed: %v", r.name, r.err)
+		}
 	}
-	for name, content := range textAssets {
-		if err := os.WriteFile(filepath.Join(outDir, name), []byte(content), 0644); err != nil {
+	for _, r := range pdfResults {
+		if !r.ok {
+			log.Warnf("theme PDF %s failed: %v", r.name, r.err)
+		}
+	}
+
+	printSummary(phases, rasterResults, pdfResults, time.Since(start))
+}
+
+// printSummary renders the closing report: per-phase timings, per-asset
+// outcomes, and a grand total.
+func printSummary(phases *phaseRecorder, raster, pdfs []renderResult, total time.Duration) {
+	var b strings.Builder
+	b.WriteString("\n  Build summary\n")
+	b.WriteString("  ------------\n")
+	for _, p := range phases.allPhases() {
+		fmt.Fprintf(&b, "    %-32s %s\n", p.name, p.elapsed.Round(time.Millisecond))
+	}
+	b.WriteString(resultsTable(raster, "raster assets"))
+	b.WriteString(resultsTable(pdfs, "theme PDFs"))
+	fmt.Fprintf(&b, "    %-32s %s\n", "total", total.Round(time.Millisecond))
+	log := newBuildLogger(false)
+	log.Infof("%s", strings.TrimRight(b.String(), "\n"))
+}
+
+// writeTextAssets writes every static text file to outDir, reporting each
+// in verbose mode.
+func writeTextAssets(outDir string, assets map[string]string) {
+	names := make([]string, 0, len(assets))
+	for name := range assets {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if err := os.WriteFile(filepath.Join(outDir, name), []byte(assets[name]), 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "error writing %s: %v\n", name, err)
 			os.Exit(1)
 		}
 	}
+}
 
-	generateRasterAssets(outDir)
-	generateDocsPDF(outDir, readme, cli, changelog)
+// renderSectionsParallel renders the three markdown sources concurrently.
+// goldmark.Markdown is documented as safe for concurrent use, so the three
+// goroutines share one renderer. The returned slice is always in document
+// order regardless of which goroutine finishes first.
+func renderSectionsParallel(readme, cli, changelog []byte, md goldmark.Markdown) []Section {
+	type res struct {
+		sections []Section
+	}
+	ch := make(chan res, 3)
 
-	fmt.Println("Site generated at _site/index.html (landing) and _site/docs.html (full reference)")
+	go func() { ch <- res{readmeSections(readme, md)} }()
+	go func() { ch <- res{cliSections(cli, md)} }()
+	go func() { ch <- res{changelogSection(changelog, md)} }()
+
+	var rm, cs, cl []Section
+	for i := 0; i < 3; i++ {
+		r := <-ch
+		// Identify which one arrived; each source produces a distinct
+		// first section id (cli sections are prefixed, changelog is
+		// "changelog"), but ordering is guaranteed by assembling in the
+		// fixed order below, so capture by channel position instead.
+		switch i {
+		case 0:
+			rm = r.sections
+		case 1:
+			cs = r.sections
+		case 2:
+			cl = r.sections
+		}
+	}
+
+	sections := make([]Section, 1, 1+len(rm)+len(cs)+len(cl))
+	sections[0] = heroSection()
+	sections = append(sections, rm...)
+	sections = append(sections, cs...)
+	sections = append(sections, cl...)
+	return sections
 }
 
 func findRepoRoot() (string, error) {

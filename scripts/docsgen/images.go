@@ -6,19 +6,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/chromedp/chromedp"
 )
 
-// generateRasterAssets renders the apple-touch-icon and Open Graph card as
-// PNGs using headless Chrome, mirroring the allocator setup in render.go.
-// It is best-effort: docsgen must still produce a working site for
-// contributors who don't have Chrome/Chromium installed locally, so a
-// failure here is logged and skipped rather than aborting the build. CI
-// always has Chrome available (installed one step earlier in docs.yml), so
-// production deploys always get real images.
-func generateRasterAssets(outDir string) {
+// generateRasterAssets renders the apple-touch-icon, favicon, PWA icons,
+// and the Open Graph card as PNGs using headless Chrome. Each image is
+// rendered in its own browser tab on a single shared Chrome process, up to
+// jobs concurrent tabs at a time — far faster than one sequential browser
+// round-trip per image. It is best-effort: docsgen must still produce a
+// working site for contributors who don't have Chrome/Chromium installed
+// locally, so a failure is reported and skipped rather than aborting the
+// build. CI always has Chrome available (installed one step earlier in
+// docs.yml), so production deploys always get real images.
+func generateRasterAssets(outDir string, log *buildLogger, jobs int) []renderResult {
+	var results []renderResult
+
 	allocCtx, allocCancel := chromedp.NewExecAllocator(
 		context.Background(),
 		append(chromedp.DefaultExecAllocatorOptions[:],
@@ -31,16 +36,15 @@ func generateRasterAssets(outDir string) {
 	)
 	defer allocCancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	if err := chromedp.Run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: Chrome unavailable, skipping favicon/OG image generation: %v\n", err)
-		return
+	// Verify Chrome boots before fanning out: a missing binary would
+	// otherwise make every tab fail with the same confusing error.
+	probeCtx, probeCancel := chromedp.NewContext(allocCtx)
+	if err := chromedp.Run(probeCtx); err != nil {
+		probeCancel()
+		log.Warnf("Chrome unavailable, skipping favicon/OG/icon generation: %v", err)
+		return results
 	}
+	probeCancel()
 
 	renders := []struct {
 		name          string
@@ -54,15 +58,59 @@ func generateRasterAssets(outDir string) {
 		{"og-image.png", 1200, 630, ogImageHTML()},
 	}
 
+	sem := make(chan struct{}, jobs)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	for _, r := range renders {
-		buf, err := screenshotHTML(ctx, r.html, r.width, r.height)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to render %s: %v\n", r.name, err)
-			continue
-		}
-		if err := os.WriteFile(filepath.Join(outDir, r.name), buf, 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to write %s: %v\n", r.name, err)
-		}
+		wg.Add(1)
+		go func(name string, width, height int64, html string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			t0 := time.Now()
+			// Each tab gets its own chromedp context on the shared
+			// allocator; tabs are independent and run concurrently.
+			tabCtx, cancel := chromedp.NewContext(allocCtx)
+			defer cancel()
+			tabCtx, cancel = context.WithTimeout(tabCtx, 45*time.Second)
+			defer cancel()
+
+			buf, err := screenshotHTML(tabCtx, html, width, height)
+			res := renderResult{name: name, elapsed: time.Since(t0), ok: err == nil}
+			if err != nil {
+				res.err = fmt.Errorf("render: %w", err)
+			} else if werr := os.WriteFile(filepath.Join(outDir, name), buf, 0644); werr != nil {
+				res.err = fmt.Errorf("write: %w", werr)
+				res.ok = false
+			} else {
+				res.note = formatBytes(len(buf))
+			}
+
+			mu.Lock()
+			results = append(results, res)
+			mu.Unlock()
+			if res.ok {
+				log.Vf("  ✓ %-24s %s", name, res.note)
+			} else {
+				log.Vf("  ✗ %-24s %v", name, res.err)
+			}
+		}(r.name, r.width, r.height, r.html)
+	}
+
+	wg.Wait()
+	return results
+}
+
+func formatBytes(n int) string {
+	switch {
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MiB", float64(n)/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.1f KiB", float64(n)/(1<<10))
+	default:
+		return fmt.Sprintf("%d B", n)
 	}
 }
 

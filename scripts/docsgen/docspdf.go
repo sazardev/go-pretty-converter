@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 
 	prettypdf "github.com/sazardev/go-pretty-pdf"
+	"github.com/sazardev/go-pretty-pdf/render"
 	"github.com/sazardev/go-pretty-pdf/theme"
 )
 
@@ -35,11 +37,17 @@ var readmeBadgesRe = regexp.MustCompile(`(?m)^\[!\[.*\n?`)
 // raw HTML screenshot. Best-effort: like generateRasterAssets, it must not
 // break `go run ./scripts/docsgen` for contributors without Chrome
 // installed locally.
-func generateDocsPDF(outDir string, readme, cli, changelog []byte) {
+//
+// The per-theme builds are independent, so they run concurrently — up to
+// jobs Chrome processes at once (the dominant cost is Chrome launch +
+// render, so this scales almost linearly until the machine saturates).
+// Each result is reported individually so the summary shows exactly which
+// themes succeeded and which were skipped.
+func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLogger, jobs int) []renderResult {
 	srcDir, err := os.MkdirTemp("", "go-pretty-pdf-docs-src-*")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: skipping docs PDF, could not create temp dir: %v\n", err)
-		return
+		log.Warnf("skipping docs PDF, could not create temp dir: %v", err)
+		return nil
 	}
 	defer func() { _ = os.RemoveAll(srcDir) }()
 
@@ -59,26 +67,56 @@ func generateDocsPDF(outDir string, readme, cli, changelog []byte) {
 	for _, d := range docs {
 		content := fmt.Sprintf("---\nid: %q\ntitle: %q\n---\n\n%s", d.id, d.title, d.body)
 		if err := os.WriteFile(filepath.Join(srcDir, d.file), []byte(content), 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping docs PDF, could not write %s: %v\n", d.file, err)
-			return
+			log.Warnf("skipping docs PDF, could not write %s: %v", d.file, err)
+			return nil
 		}
 	}
 
-	for _, t := range theme.List() {
-		outPath := filepath.Join(outDir, docsPDFFilename(t.Name))
-		if err := buildOneDocsPDF(srcDir, outPath, t.Name); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping docs PDF (theme %s): %v\n", t.Name, err)
-			continue
-		}
-		if t.Name == theme.NameClassic {
-			if err := copyFile(outPath, filepath.Join(outDir, docsPDFDefault)); err != nil {
-				fmt.Fprintf(os.Stderr, "warning: could not stage default docs PDF: %v\n", err)
+	themes := theme.List()
+	sem := make(chan struct{}, jobs)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	results := make([]renderResult, 0, len(themes))
+
+	for _, t := range themes {
+		wg.Add(1)
+		go func(t theme.Theme) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			outPath := filepath.Join(outDir, docsPDFFilename(t.Name))
+			t0 := time.Now()
+			err := buildOneDocsPDF(srcDir, outPath, t.Name, log)
+			res := renderResult{name: t.Name, elapsed: time.Since(t0), ok: err == nil}
+			if err != nil {
+				res.err = err
+			} else if info, serr := os.Stat(outPath); serr == nil {
+				res.note = formatBytes(int(info.Size()))
 			}
-		}
+			if res.ok && t.Name == theme.NameClassic {
+				if cerr := copyFile(outPath, filepath.Join(outDir, docsPDFDefault)); cerr != nil {
+					res.note = "built; could not stage default copy: " + cerr.Error()
+				}
+			}
+
+			mu.Lock()
+			results = append(results, res)
+			mu.Unlock()
+
+			if res.ok {
+				log.Vf("  ✓ %-16s %-10s %s", t.Name, res.note, res.elapsed.Round(time.Millisecond))
+			} else {
+				log.Vf("  ✗ %-16s %v", t.Name, res.err)
+			}
+		}(t)
 	}
+
+	wg.Wait()
+	return results
 }
 
-func buildOneDocsPDF(srcDir, outPath, themeID string) error {
+func buildOneDocsPDF(srcDir, outPath, themeID string, log *buildLogger) error {
 	pdf, err := prettypdf.New(
 		prettypdf.WithSourceDir(srcDir),
 		prettypdf.WithOutputFile(outPath),
@@ -87,18 +125,39 @@ func buildOneDocsPDF(srcDir, outPath, themeID string) error {
 		prettypdf.WithAuthor("sazardev"),
 		prettypdf.WithHeaderTitle("go-pretty-pdf — Documentation"),
 		prettypdf.WithThemeName(themeID, theme.Options{}),
-		prettypdf.WithTimeout(90*time.Second),
+		prettypdf.WithTimeout(120*time.Second),
 	)
 	if err != nil {
 		return fmt.Errorf("configuring PDF build: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	if err := pdf.Build(ctx); err != nil {
 		return fmt.Errorf("building PDF: %w", err)
 	}
+
+	// Report the audit findings for this theme in verbose mode: this is
+	// dogfooding, so it should surface exactly what a user would see.
+	if audit := pdf.LastAudit(); audit != nil && audit.HasIssues() {
+		for _, issue := range audit.Issues {
+			log.Vf("  ! [%s] %s: %s", themeID, issue.Check, issue.Message)
+		}
+	}
+	if audit := pdf.LastAudit(); audit != nil && reportHasErrors(audit) {
+		return fmt.Errorf("PDF audit reported errors (corrupt output)")
+	}
+
 	return nil
+}
+
+func reportHasErrors(report *render.AuditReport) bool {
+	for _, i := range report.Issues {
+		if i.HasError() {
+			return true
+		}
+	}
+	return false
 }
 
 func copyFile(src, dst string) error {
