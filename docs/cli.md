@@ -60,6 +60,8 @@ pretty-pdf build [flags]
 | `--no-toc` | `false` | Omit the table of contents |
 | `--no-page-numbers` | `false` | Omit page numbers |
 | `--no-header` | `false` | Omit the running page header |
+| `--no-outline` | `false` | Skip PDF bookmarks/outline — faster on very large documents |
+| `--no-tagged-pdf` | `false` | Skip PDF accessibility tagging (PDF/UA) — faster on very large documents |
 | `--color-primary` | `""` | Theme override: primary color (e.g. `#1a56db`) |
 | `--color-accent` | `""` | Theme override: accent color |
 | `--color-text` | `""` | Theme override: body text color |

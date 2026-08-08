@@ -49,6 +49,8 @@ var (
 	noTOC             bool
 	noPageNumbers     bool
 	noHeader          bool
+	noOutline         bool
+	noTagged          bool
 	colorPrimary      string
 	colorAccent       string
 	colorText         string
@@ -184,6 +186,8 @@ func init() {
 	buildCmd.Flags().BoolVar(&noTOC, "no-toc", false, "omit the table of contents")
 	buildCmd.Flags().BoolVar(&noPageNumbers, "no-page-numbers", false, "omit page numbers")
 	buildCmd.Flags().BoolVar(&noHeader, "no-header", false, "omit the running page header")
+	buildCmd.Flags().BoolVar(&noOutline, "no-outline", false, "skip PDF bookmarks/outline (faster on very large documents)")
+	buildCmd.Flags().BoolVar(&noTagged, "no-tagged-pdf", false, "skip PDF accessibility tagging (faster on very large documents)")
 	buildCmd.Flags().StringVar(&colorPrimary, "color-primary", "", "theme override: primary color (e.g. #1a56db)")
 	buildCmd.Flags().StringVar(&colorAccent, "color-accent", "", "theme override: accent color")
 	buildCmd.Flags().StringVar(&colorText, "color-text", "", "theme override: body text color")

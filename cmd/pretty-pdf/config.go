@@ -163,13 +163,20 @@ func loadConfig(cmd *cobra.Command) (*config.Config, error) {
 }
 
 func buildOpts(cfg *config.Config, chromeExecPath string) []prettypdf.Option {
-	return []prettypdf.Option{
+	opts := []prettypdf.Option{
 		prettypdf.WithVerbose(verbose),
 		prettypdf.WithFullConfig(cfg),
 		prettypdf.WithNetworkAccess(cfg.ThemeOptions.AllowNetworkFonts),
 		prettypdf.WithValidator(validatorFromConfig(cfg)),
 		prettypdf.WithChromeExecPath(chromeExecPath),
 	}
+	if noOutline {
+		opts = append(opts, prettypdf.WithGenerateDocumentOutline(false))
+	}
+	if noTagged {
+		opts = append(opts, prettypdf.WithGenerateTaggedPDF(false))
+	}
+	return opts
 }
 
 func boolPtr(b bool) *bool { return &b }

@@ -42,6 +42,18 @@ type Options struct {
 	// here; leaving it empty preserves the previous default-discovery
 	// behavior exactly.
 	ChromeExecPath string
+	// GenerateDocumentOutline, when true, asks Chrome to build the PDF
+	// bookmarks/outline tree from the document's headings. This is
+	// post-print work over the entire PDF and can be a significant chunk
+	// of render time on very large documents. Defaults to true (bookmarks
+	// are a headline feature); set false to trade them for speed.
+	GenerateDocumentOutline bool
+	// GenerateTaggedPDF, when true, asks Chrome to tag the PDF with
+	// accessibility structure (PDF/UA). This is post-print work over the
+	// entire PDF — the most expensive of the post-print steps on huge
+	// documents. Defaults to true (accessibility is valuable); set false
+	// for a meaningful speedup on very large documents.
+	GenerateTaggedPDF bool
 }
 
 func DefaultOptions() Options {
@@ -70,6 +82,10 @@ func DefaultOptions() Options {
 		NetworkAccess: false,
 		PageNumbers:   true,
 		ShowHeader:    true,
+		// Both post-print steps default on (bookmarks and accessibility
+		// are features), but are switchable off for speed on large docs.
+		GenerateDocumentOutline: true,
+		GenerateTaggedPDF:       true,
 	}
 }
 
@@ -147,6 +163,36 @@ func RenderToPDFWithAudit(htmlContent string, outputPath string, opts Options) (
 // completion or to opts.Timeout regardless. opts.Timeout still applies as
 // an upper bound layered on top of ctx via context.WithTimeout.
 func RenderToPDFWithAuditContext(ctx context.Context, htmlContent string, outputPath string, opts Options) (*AuditReport, error) {
+	allocCtx, allocCancel := NewBrowser(ctx, opts)
+	defer allocCancel()
+
+	browserCtx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	return renderToPDFWithAuditBrowser(browserCtx, htmlContent, outputPath, opts)
+}
+
+// RenderToPDFWithAuditBrowser renders htmlContent to outputPath reusing an
+// existing Chrome browser context instead of booting a new Chrome process.
+// The browser must have been created with NewBrowser (or chromedp.NewContext
+// over a shared allocator). This is how callers rendering many documents
+// (e.g. docsgen's per-theme PDFs) avoid paying the ~400ms Chrome startup
+// cost once per document: boot once, render N times.
+//
+// The caller owns the browser lifetime: it must stay alive for the whole
+// call and be closed (allocCancel) after all renders finish. opts.Timeout
+// still bounds this single render. ctx cancels the in-flight render.
+func RenderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string, outputPath string, opts Options) (*AuditReport, error) {
+	renderCtx, cancel := context.WithTimeout(browserCtx, opts.Timeout)
+	defer cancel()
+	return renderToPDFWithAuditBrowser(renderCtx, htmlContent, outputPath, opts)
+}
+
+// renderToPDFWithAuditBrowser is the shared implementation behind
+// RenderToPDFWithAuditContext and RenderToPDFWithAuditBrowser: it renders
+// htmlContent into outputPath on the given browser context. The caller is
+// responsible for wrapping browserCtx with any timeout.
+func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string, outputPath string, opts Options) (*AuditReport, error) {
 	// Resolved and validated up front, before spinning up a browser at
 	// all, so a bad --cover-image path fails fast with a clear error
 	// instead of after a full Chrome launch.
@@ -158,30 +204,6 @@ func RenderToPDFWithAuditContext(ctx context.Context, htmlContent string, output
 			return nil, err
 		}
 	}
-
-	allocOpts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.DisableGPU,
-		chromedp.NoSandbox,
-		chromedp.Headless,
-		chromedp.Flag("disable-dev-shm-usage", true),
-		// Chrome can take longer than chromedp's 20s default to print its
-		// DevTools websocket URL on a cold/loaded CI runner (e.g. right
-		// after a fresh install); give it more room to avoid a spurious
-		// "websocket url timeout reached" before the browser even starts.
-		chromedp.WSURLReadTimeout(45*time.Second),
-	)
-	if opts.ChromeExecPath != "" {
-		allocOpts = append(allocOpts, chromedp.ExecPath(opts.ChromeExecPath))
-	}
-
-	allocCtx, allocCancel := chromedp.NewExecAllocator(ctx, allocOpts...)
-	defer allocCancel()
-
-	browserCtx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
-	browserCtx, cancel = context.WithTimeout(browserCtx, opts.Timeout)
-	defer cancel()
 
 	navURL, cleanup, err := navigationURLFor(htmlContent)
 	if err != nil {
@@ -294,8 +316,8 @@ func RenderToPDFWithAuditContext(ctx context.Context, htmlContent string, output
 				WithDisplayHeaderFooter(needsHeaderFooter).
 				WithHeaderTemplate(headerTpl).
 				WithFooterTemplate(footerTpl).
-				WithGenerateDocumentOutline(true).
-				WithGenerateTaggedPDF(true).
+				WithGenerateDocumentOutline(opts.GenerateDocumentOutline).
+				WithGenerateTaggedPDF(opts.GenerateTaggedPDF).
 				WithMarginTop(opts.MarginTop).
 				WithMarginBottom(opts.MarginBottom).
 				WithMarginLeft(opts.MarginLeft).
@@ -383,4 +405,40 @@ func CheckChromeAvailable() error {
 	defer cancel()
 
 	return chromedp.Run(ctx)
+}
+
+// NewBrowser boots a headless Chrome allocator for rendering, tuned for
+// minimal startup latency. The returned cancel tears down the browser; it
+// must be deferred by the caller. The launch flags suppress the first-run
+// experience, background networking, component updates, sync, and
+// extensions — all of which Chrome would otherwise spin up on boot even
+// though a PDF render uses none of them. These shave ~60-120ms off each
+// cold start, and callers rendering many documents should create one
+// browser and pass it to RenderToPDFWithAuditBrowser (or
+// WithSharedBrowser on a PDF) to avoid the ~400ms startup cost entirely.
+func NewBrowser(ctx context.Context, opts Options) (context.Context, context.CancelFunc) {
+	allocOpts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.DisableGPU,
+		chromedp.NoSandbox,
+		chromedp.Headless,
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("no-first-run", true),
+		chromedp.Flag("no-default-browser-check", true),
+		chromedp.Flag("disable-background-networking", true),
+		chromedp.Flag("disable-component-update", true),
+		chromedp.Flag("disable-sync", true),
+		chromedp.Flag("disable-extensions", true),
+		chromedp.Flag("disable-background-timer-throttling", true),
+		chromedp.Flag("disable-renderer-backgrounding", true),
+		chromedp.Flag("disable-features", "Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion"),
+		// Chrome can take longer than chromedp's 20s default to print its
+		// DevTools websocket URL on a cold/loaded CI runner (e.g. right
+		// after a fresh install); give it more room to avoid a spurious
+		// "websocket url timeout reached" before the browser even starts.
+		chromedp.WSURLReadTimeout(45*time.Second),
+	)
+	if opts.ChromeExecPath != "" {
+		allocOpts = append(allocOpts, chromedp.ExecPath(opts.ChromeExecPath))
+	}
+	return chromedp.NewExecAllocator(ctx, allocOpts...)
 }

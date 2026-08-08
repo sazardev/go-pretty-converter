@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chromedp/chromedp"
+
 	"github.com/sazardev/go-pretty-pdf/compose"
 	"github.com/sazardev/go-pretty-pdf/config"
 	"github.com/sazardev/go-pretty-pdf/epub"
@@ -63,6 +65,14 @@ type PDF struct {
 	headerTitleSet  bool
 	lastAudit       *render.AuditReport
 	configErr       error
+	// sharedBrowser, when set via WithSharedBrowser, is a Chrome allocator
+	// context reused across Build calls instead of booting a new Chrome
+	// process per render. Each Build creates its own browser tab
+	// (chromedp.NewContext) on the shared allocator, so concurrent Build
+	// calls are safe. Callers rendering many PDFs (e.g. docsgen) use this
+	// to amortize the ~400ms Chrome startup cost once across N documents.
+	// The caller owns the allocator and must cancel it after.
+	sharedBrowser context.Context
 }
 
 type ComposeOptions = compose.Options
@@ -205,6 +215,39 @@ func WithValidator(v mdx.Validator) Option {
 func WithTimeout(d time.Duration) Option {
 	return func(p *PDF) {
 		p.renderOpts.Timeout = d
+	}
+}
+
+// WithGenerateDocumentOutline toggles whether PDF bookmarks/outline are
+// built from the document's headings. Building the outline is post-print
+// work over the whole PDF; disable for a meaningful speedup on very large
+// documents at the cost of losing in-PDF navigation bookmarks.
+func WithGenerateDocumentOutline(enabled bool) Option {
+	return func(p *PDF) {
+		p.renderOpts.GenerateDocumentOutline = enabled
+	}
+}
+
+// WithGenerateTaggedPDF toggles PDF accessibility tagging (PDF/UA). Tagging
+// is the most expensive post-print step on large documents; disable for a
+// real speedup when accessibility metadata isn't needed.
+func WithGenerateTaggedPDF(enabled bool) Option {
+	return func(p *PDF) {
+		p.renderOpts.GenerateTaggedPDF = enabled
+	}
+}
+
+// WithSharedBrowser makes subsequent Build calls render PDFs on the given
+// Chrome allocator instead of booting a fresh Chrome process each time.
+// The allocator must come from render.NewBrowser, stay alive across all
+// Build calls, and be canceled by the caller once done. Each Build opens
+// its own tab on the allocator, so concurrent Build calls share one Chrome
+// process safely. This amortizes the per-launch Chrome startup cost across
+// many renders — most useful when a process renders many documents
+// (docsgen's per-theme PDFs, a batch job, a test harness).
+func WithSharedBrowser(browserCtx context.Context) Option {
+	return func(p *PDF) {
+		p.sharedBrowser = browserCtx
 	}
 }
 
@@ -587,7 +630,17 @@ func (p *PDF) Build(ctx context.Context) error {
 				return fmt.Errorf("composing HTML: %w", err)
 			}
 			p.logVerbose(fmt.Sprintf("Rendering PDF to %s...", p.outputFile))
-			report, err := render.RenderToPDFWithAuditContext(ctx, html, p.outputFile, p.renderOpts)
+			var report *render.AuditReport
+			if p.sharedBrowser != nil {
+				// Open a fresh tab on the shared allocator; each render
+				// gets its own browser context so concurrent Build calls
+				// on the same allocator don't step on each other.
+				browserCtx, tabCancel := chromedp.NewContext(p.sharedBrowser)
+				report, err = render.RenderToPDFWithAuditBrowser(browserCtx, html, p.outputFile, p.renderOpts)
+				tabCancel()
+			} else {
+				report, err = render.RenderToPDFWithAuditContext(ctx, html, p.outputFile, p.renderOpts)
+			}
 			if err != nil {
 				return fmt.Errorf("rendering PDF: %w", err)
 			}

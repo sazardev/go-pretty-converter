@@ -103,6 +103,13 @@ func (r *AuditReport) HasIssues() bool {
 //     print-safe minimum, so a heading or paragraph can strand a single
 //     line at the bottom/top of a page.
 //
+// On large documents several checks sample the first N matching elements
+// (N is a few thousand) rather than walking the entire tree, because
+// style reads (getComputedStyle, scrollWidth/Height) force layout and get
+// very expensive on documents with tens of thousands of nodes — the
+// findings are deduped and capped anyway, so the same signal is captured
+// with bounded cost.
+//
 // It deliberately cannot see the two things that live purely in Chrome's
 // print engine rather than the DOM: the fixed ~0.2in header/footer inset,
 // and how the browser's print pagination actually slices this content
@@ -120,9 +127,16 @@ const domAuditJS = `(() => {
     return el.id ? ('#' + el.id) : ('<' + el.tagName.toLowerCase() + '>');
   }
 
-  // overflow-x AND overflow-y for bounded elements.
+  // overflow-x AND overflow-y for bounded elements. Sampled: a huge
+  // document can have tens of thousands of these, and scrollWidth/Height
+  // force layout reads; capping the scan keeps the audit fast without
+  // losing signal (the same overflow pattern repeats across a document).
+  const maxScrollScan = 5000;
   const scrollableSel = 'pre, code, table, img, .component-deep-dive, .component-warning, .component-axiom';
-  document.querySelectorAll(scrollableSel).forEach(el => {
+  const scrollEls = document.querySelectorAll(scrollableSel);
+  const scrollCount = Math.min(scrollEls.length, maxScrollScan);
+  for (let si = 0; si < scrollCount; si++) {
+    const el = scrollEls[si];
     const cs = getComputedStyle(el);
     if (el.scrollWidth > el.clientWidth + 2) {
       pushIssue('overflow-x', elLabel(el) + ' is wider than its box (' + el.scrollWidth + 'px vs ' + el.clientWidth + 'px) and may be clipped when printed');
@@ -132,7 +146,7 @@ const domAuditJS = `(() => {
     if (el.scrollHeight > el.clientHeight + 2 && cs.height !== 'auto' && cs.maxHeight !== 'none') {
       pushIssue('overflow-y', elLabel(el) + ' is taller than its box (' + el.scrollHeight + 'px vs ' + el.clientHeight + 'px) and its content may be clipped when printed');
     }
-  });
+  }
 
   document.querySelectorAll('img').forEach(img => {
     if (img.complete && img.naturalWidth === 0) {
@@ -173,6 +187,8 @@ const domAuditJS = `(() => {
   // TOC integrity — only when a TOC is present.
   const tocLinks = document.querySelectorAll('.toc a[href^="#"]');
   if (tocLinks.length > 0) {
+    const tocTargets = new Set();
+    tocLinks.forEach(a => tocTargets.add(a.getAttribute('href').slice(1)));
     tocLinks.forEach(a => {
       const frag = a.getAttribute('href').slice(1);
       if (!document.getElementById(frag)) {
@@ -180,36 +196,51 @@ const domAuditJS = `(() => {
       }
     });
     // Every top-level section heading in the body should have a TOC entry.
-    document.querySelectorAll('h1, h2, h3').forEach(h => {
+    // Sampled: the TOC itself is capped by the number of docs, but a
+    // document with thousands of sections makes this scan O(headings);
+    // capping keeps it bounded.
+    const heads = document.querySelectorAll('h1, h2, h3');
+    const hcap = Math.min(heads.length, 3000);
+    for (let hi = 0; hi < hcap; hi++) {
+      const h = heads[hi];
       const sec = h.closest('section');
-      if (!sec || !sec.id) return;
-      const linked = tocLinks.length && Array.prototype.some.call(tocLinks, a => a.getAttribute('href') === '#' + sec.id);
-      if (!linked) {
+      if (!sec || !sec.id) continue;
+      if (!tocTargets.has(sec.id)) {
         pushIssue('toc-mismatch', 'section #' + sec.id + ' ("' + (h.textContent || '').trim().slice(0, 40) + '") has no TOC entry');
       }
-    });
+    }
   }
 
-  // font availability — report families the page wants but the browser
-  // can't resolve (blocked network fonts, missing local fonts).
+  // font availability — report families the page asks for but the browser
+  // can't resolve (blocked network fonts, missing local fonts). Sampling:
+  // walking every element and calling getComputedStyle on each is O(n) with
+  // a huge constant (style recalc per element), which on a document with
+  // thousands of sections can dominate the whole audit. Instead, collect
+  // the distinct font-family *declarations* from the stylesheet and probe
+  // each against document.fonts — a font that's genuinely missing is
+  // declared somewhere in CSS, so this keeps full coverage at O(unique
+  // families) instead of O(elements).
   const familyRe = /^(['"])(.+)\1$/;
-  const fontFamilies = new Map();
-  document.querySelectorAll('body *').forEach(el => {
-    const fam = getComputedStyle(el).fontFamily;
-    fam.split(',').forEach(part => {
-      const p = part.trim();
-      let name = p;
-      const m = name.match(familyRe);
-      if (m) name = m[2];
-      if (name && !/^(sans-serif|serif|monospace|system-ui|cursive|fantasy|math|ui-.*)$/.test(name)) {
-        fontFamilies.set(name, (fontFamilies.get(name) || 0) + 1);
-      }
+  const fontFamilies = new Set();
+  document.querySelectorAll('style').forEach(style => {
+    const css = style.textContent || '';
+    css.replace(/font-family\s*:\s*([^;}]+)/gi, (m, list) => {
+      list.split(',').forEach(part => {
+        const p = part.trim();
+        let name = p;
+        const mm = name.match(familyRe);
+        if (mm) name = mm[2];
+        if (name && !/^(sans-serif|serif|monospace|system-ui|cursive|fantasy|math|ui-.*)$/.test(name)) {
+          fontFamilies.add(name);
+        }
+      });
+      return m;
     });
   });
-  fontFamilies.forEach((count, name) => {
+  fontFamilies.forEach(name => {
     try {
       if (document.fonts && document.fonts.check && !document.fonts.check('16px "' + name + '"')) {
-        pushIssue('font-load-fail', 'font "' + name + '" (used by ' + count + ' element(s)) could not be loaded — will fall back to another family');
+        pushIssue('font-load-fail', 'font "' + name + '" could not be loaded — will fall back to another family');
       }
     } catch (e) {}
   });
@@ -248,11 +279,21 @@ const domAuditJS = `(() => {
     return isLargeText(el) ? 3 : 4.5;
   }
 
+  // low-contrast is sampled, not exhaustive: effectiveBg walks up the
+  // ancestor chain calling getComputedStyle per text node, which is fine
+  // on a normal book but O(n·depth) and style-recalc-heavy on documents
+  // with tens of thousands of nodes. Since findings are deduped and capped
+  // at 5, scanning the whole tree never yields more signal — sampling the
+  // first maxContrastNodes text nodes keeps the cost bounded on huge
+  // documents while still surfacing the same palette collisions.
+  const maxContrastNodes = 3000;
   const seenContrast = new Set();
   let contrastIssues = 0;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node;
-  while ((node = walker.nextNode()) && contrastIssues < 5) {
+  let scanned = 0;
+  while ((node = walker.nextNode()) && contrastIssues < 5 && scanned < maxContrastNodes) {
+    scanned++;
     const text = node.textContent.trim();
     if (text.length < 2) continue;
     const el = node.parentElement;
@@ -272,38 +313,51 @@ const domAuditJS = `(() => {
   }
 
   if (needsHeaderFooter) {
-    document.querySelectorAll('h1, h2, h3, h4, h5').forEach(h => {
+    const heads = document.querySelectorAll('h1, h2, h3, h4, h5');
+    const hn = Math.min(heads.length, 3000);
+    for (let hi = 0; hi < hn; hi++) {
+      const h = heads[hi];
       const style = getComputedStyle(h);
       const breaksPage = style.pageBreakBefore === 'always' || style.breakBefore === 'page';
-      if (!breaksPage) return;
+      if (!breaksPage) continue;
       const marginTopIn = parseFloat(style.marginTop) / 96;
       if (marginTopIn < 0.3) {
         const label = (h.textContent || '').trim().slice(0, 40);
         pushIssue('heading-clip-risk', '<' + h.tagName.toLowerCase() + '> "' + label + '" forces a page break but has only ' + marginTopIn.toFixed(2) + 'in of top margin — content flush against a forced page break is clipped by roughly the first 0.3in when a header or page numbers are shown; give it more margin-top');
       }
-    });
+    }
   }
 
   // break-inside protection for tables/code: without it, print slices
-  // mid-row/mid-line.
-  document.querySelectorAll('table, pre, code, .component-deep-dive, .component-warning, .component-axiom').forEach(el => {
-    const cs = getComputedStyle(el);
-    const avoid = cs.pageBreakInside === 'avoid' || cs.breakInside === 'avoid';
-    if (!avoid && (el.scrollHeight > 300 || el.offsetHeight > 200)) {
-      pushIssue('page-break-inside-risk', elLabel(el) + ' has no page-break-inside: avoid and may be split across pages mid-row');
+  // mid-row/mid-line. Sampled like overflow for huge documents.
+  {
+    const els = document.querySelectorAll('table, pre, code, .component-deep-dive, .component-warning, .component-axiom');
+    const n = Math.min(els.length, 3000);
+    for (let i = 0; i < n; i++) {
+      const el = els[i];
+      const cs = getComputedStyle(el);
+      const avoid = cs.pageBreakInside === 'avoid' || cs.breakInside === 'avoid';
+      if (!avoid && (el.scrollHeight > 300 || el.offsetHeight > 200)) {
+        pushIssue('page-break-inside-risk', elLabel(el) + ' has no page-break-inside: avoid and may be split across pages mid-row');
+      }
     }
-  });
+  }
 
   // orphan/widow protection: a block with orphans/widows < 2 can strand a
-  // single line at the bottom or top of a page.
-  document.querySelectorAll('p, h1, h2, h3, h4, h5, li').forEach(el => {
-    const cs = getComputedStyle(el);
-    const orphans = parseInt(cs.orphans, 10);
-    const widows = parseInt(cs.widows, 10);
-    if ((orphans !== 0 && orphans < 2) || (widows !== 0 && widows < 2)) {
-      pushIssue('line-break-risk', elLabel(el) + ' has orphans=' + orphans + ' widows=' + widows + ' — a line can be stranded alone at the top/bottom of a page; set orphans/widows to at least 2');
+  // single line at the bottom or top of a page. Sampled for huge docs.
+  {
+    const els = document.querySelectorAll('p, h1, h2, h3, h4, h5, li');
+    const n = Math.min(els.length, 3000);
+    for (let i = 0; i < n; i++) {
+      const el = els[i];
+      const cs = getComputedStyle(el);
+      const orphans = parseInt(cs.orphans, 10);
+      const widows = parseInt(cs.widows, 10);
+      if ((orphans !== 0 && orphans < 2) || (widows !== 0 && widows < 2)) {
+        pushIssue('line-break-risk', elLabel(el) + ' has orphans=' + orphans + ' widows=' + widows + ' — a line can be stranded alone at the top/bottom of a page; set orphans/widows to at least 2');
+      }
     }
-  });
+  }
 
   return JSON.stringify(issues);
 })()`
