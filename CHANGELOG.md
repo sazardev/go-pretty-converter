@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **More exports from `scripts/docsgen`**: one EPUB per builtin theme (`go-pretty-pdf-docs-<theme>.epub`) plus a canonical default, raw markdown sources (`README.md`, `docs.md`, `CHANGELOG.md`), a client/agent search index (`docs-search.json`), a machine-readable build manifest (`version.json`), a plain-text `sitemap.txt`, and a full performance report (`report.json`).
+- **Aggressive performance reporting in `docsgen`**: the summary now shows wall time, artifact count/size, throughput (artifacts/s and MiB/s), phase-sum parallelism ratio, per-group artifact tables with mean/p95/min/max/stddev, and an ASCII-bar phase timeline. `--bench` additionally re-renders the theme PDFs at `jobs=1` to headline the real parallel speedup, and `_site/report.json` persists every metric in machine-readable form.
 - **Ten new quality-audit checks**, expanding the automatic PDF audit from 6 rules to 16:
   - `overflow-y` — content taller than a fixed-height box, clipped on print.
   - `image-low-res` — an image rendered at more than ~2x its intrinsic width, so it will look pixelated on paper.
@@ -23,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`render.SeverityError`** and the corrupt-output checks now report at `error` severity, so callers can distinguish "the PDF is genuinely corrupt" from advisory layout warnings (`pdf-empty`, `pdf-eof-missing`, `page-count`).
 - **WCAG 2.2 contrast thresholds** in `low-contrast`: 4.5:1 for normal text and 3:1 for large text (≥18.66px, or ≥14px bold), replacing the old flat 2.2:1 cutoff that only caught obviously unreadable pairs.
 - **`mdx.Parser.ComponentUsage()` / `ComponentNames()` / `ResetComponentUsage()`** so callers can inspect which custom components a parse actually exercised, and **`render` PDF-byte auditing** now tolerates Chrome's trailing-newline `%%EOF`.
+- **`render.NewBrowser`, `render.RenderToPDFWithAuditBrowser`, and `prettypdf.WithSharedBrowser`**: boot one headless Chrome allocator (with startup-tuned flags) and render many documents against it instead of launching a fresh Chrome per `Build`. Useful for keeping a persistent browser across a batch of renders; measured on this machine it does not beat running each render concurrently, which remains the main parallelism lever. The new browser setup also became the default for `RenderToPDFWithAuditContext`, so every render picks up the reduced-startup flag set.
+- **Large-document audit sampling**: the DOM audit's style-reading checks (`overflow`, `low-contrast`, `page-break-inside-risk`, `line-break-risk`, `heading-clip-risk`, TOC coverage, font-load) now sample the first few thousand matching elements instead of walking the entire tree, since layout reads (`getComputedStyle`, `scrollWidth/Height`) dominate on documents with tens of thousands of nodes and the findings are deduped/capped anyway. Documents render far faster at scale (measured: 5,000-document PDF went from >120s timeout to ~60s).
+- **Speed flags for very large documents**: `--no-outline` (`prettypdf.WithGenerateDocumentOutline(false)`) and `--no-tagged-pdf` (`prettypdf.WithGenerateTaggedPDF(false)`) disable Chrome's post-print outline/bookmark build and accessibility tagging, the two most expensive post-print steps. Measured on a ~500-page document: both off is ~30% faster than both on (~1.1s vs ~1.6s); on docsgen's full theme-PDF set they cut wall time ~10%. Defaults keep both on — bookmarks and PDF/UA accessibility are features.
 
 ### Changed
 
@@ -32,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `duplicate-id` message used the raw DOM node in its text; it now names both elements (`#dup` on … (also on `#dup`)).
 - The new `%%EOF` check originally flagged Chrome's well-formed output because Chrome appends a newline after the marker; the check now tolerates trailing whitespace.
+- `docsgen`'s `report.json` could panic with `index out of range` when computing the fastest/slowest artifact names (indices into the ok-durations slice were confused with indices into the results slice); the scan now tracks names directly.
 
 ## [0.9.0] - 2026-07-15
 

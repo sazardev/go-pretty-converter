@@ -48,6 +48,9 @@ test-cover: ## Run tests with coverage report
 	@echo ""
 	@echo "Coverage report: coverage.html"
 
+bench: ## Run the automated performance benchmark (renders books up to 3000 docs)
+	@$(GOCMD) run ./scripts/benchmark
+
 ##@ Build
 
 build: ## Build binary (dev)
