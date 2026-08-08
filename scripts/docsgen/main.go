@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/yuin/goldmark"
@@ -36,6 +37,14 @@ const (
 	siteKeywords    = "markdown to pdf, mdx to pdf, go pdf generator, golang pdf library, cli pdf generator, print-ready pdf, headless chrome pdf, markdown book generator, mdx renderer"
 )
 
+// siteName is the project display name, reused across metadata, EPUBs, and
+// generated markdown to avoid repeated string literals.
+const siteName = "go-pretty-pdf"
+
+// heroSectionID is the landing hero section's stable id, referenced by the
+// docs page assembly and the search index.
+const heroSectionID = "hero"
+
 type Section struct {
 	ID      string
 	Title   string
@@ -46,9 +55,12 @@ type Section struct {
 func main() {
 	verbose := flag.Bool("verbose", false, "print every step (markdown sections, per-asset renders, per-theme PDFs)")
 	jobs := flag.Int("jobs", 4, "maximum concurrent Chrome-based renders (screenshots + PDFs)")
+	bench := flag.Bool("bench", false, "additionally render the theme PDFs sequentially (jobs=1) to measure real parallel speedup")
+	noOutline := flag.Bool("no-outline", false, "skip PDF bookmarks/outline in theme PDFs (faster on large docs)")
+	noTagged := flag.Bool("no-tagged-pdf", false, "skip PDF accessibility tagging in theme PDFs (faster on large docs)")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: %s [--verbose] [--jobs N]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage: %s [--verbose] [--jobs N] [--bench] [--no-outline] [--no-tagged-pdf]\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Regenerates _site/ from README.md, docs/cli.md, and CHANGELOG.md.\n")
 		flag.PrintDefaults()
 	}
@@ -92,8 +104,8 @@ func main() {
 
 	tAssets := time.Now()
 	outDir := filepath.Join(root, "_site")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "error creating output directory: %v\n", err)
+	if mkErr := os.MkdirAll(outDir, 0755); mkErr != nil {
+		fmt.Fprintf(os.Stderr, "error creating output directory: %v\n", mkErr)
 		os.Exit(1)
 	}
 	writeTextAssets(outDir, map[string]string{
@@ -107,15 +119,67 @@ func main() {
 		"humans.txt":       humansTXT(),
 		"favicon.svg":      faviconSVG(),
 	})
-	phases.logPhase("write text assets", tAssets)
+	buildRawDocs(outDir, root, readme, cli, changelog, log)
+	buildSearchIndex(outDir, sections, log)
+	writeMetadata(outDir, log)
+	writeSitemapTXT(outDir, log)
+	phases.logPhase("write text + data assets", tAssets)
 
 	tRaster := time.Now()
 	rasterResults := generateRasterAssets(outDir, log, *jobs)
 	phases.logPhase("raster assets (parallel)", tRaster)
 
-	tPDFs := time.Now()
-	pdfResults := generateDocsPDF(outDir, readme, cli, changelog, log, *jobs)
-	phases.logPhase("theme PDFs (parallel)", tPDFs)
+	// PDFs and EPUBs share the same parsed docs; prepare once, then build
+	// both in parallel — EPUBs need no Chrome, so they don't contend with
+	// the PDF Chrome processes beyond the jobs semaphore.
+	tFormats := time.Now()
+	srcDir, docs, err := prepareDocsSource(readme, cli, changelog)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error preparing docs source: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() { _ = os.RemoveAll(srcDir) }()
+
+	var epubResults []renderResult
+	var epubWG sync.WaitGroup
+	epubWG.Add(1)
+	go func() {
+		defer epubWG.Done()
+		epubResults = buildDocsEPUBs(outDir, docs, log, *jobs)
+	}()
+	pdfResults := generateDocsPDF(outDir, readme, cli, changelog, log, *jobs, *noOutline, *noTagged)
+	epubWG.Wait()
+	phases.logPhase("theme PDFs + EPUBs (parallel)", tFormats)
+
+	// Optional benchmark: re-render the PDFs at jobs=1 to quantify the
+	// parallelism speedup for this exact machine. Reuses the same source
+	// dir but writes to a throwaway location so _site isn't disturbed.
+	// The wall time for the *real* build is captured before the benchmark
+	// runs, so the speedup compares like-for-like.
+	buildTotal := time.Since(start)
+	var benchElapsed time.Duration
+	if *bench {
+		log.Infof("")
+		log.Infof("  Benchmarking parallel speedup (rendering 17 PDFs at jobs=1)...")
+		benchDir, bdirErr := os.MkdirTemp("", "docsgen-bench-*")
+		if bdirErr != nil {
+			log.Warnf("benchmark: could not create temp dir: %v", bdirErr)
+		} else {
+			tBench := time.Now()
+			benchResults := generateDocsPDF(benchDir, readme, cli, changelog, log, 1, *noOutline, *noTagged)
+			benchElapsed = time.Since(tBench)
+			for _, r := range benchResults {
+				if !r.ok {
+					log.Warnf("benchmark PDF %s failed: %v", r.name, r.err)
+				}
+			}
+			_ = os.RemoveAll(benchDir)
+			// Reported separately (not via phases) so the build timeline
+			// stays comparable — the benchmark is extra work, not a build
+			// phase, and would otherwise skew the phase-sum metric.
+			log.Vf("  ✓ %-32s %s", "benchmark: PDFs at jobs=1", benchElapsed.Round(time.Millisecond))
+		}
+	}
 
 	log.Infof("")
 	log.Infof("  PDF quality checks ran on every theme PDF (see --verbose for the audit detail).")
@@ -130,24 +194,98 @@ func main() {
 			log.Warnf("theme PDF %s failed: %v", r.name, r.err)
 		}
 	}
+	for _, r := range epubResults {
+		if !r.ok {
+			log.Warnf("theme EPUB %s failed: %v", r.name, r.err)
+		}
+	}
 
-	printSummary(phases, rasterResults, pdfResults, time.Since(start))
+	allResults := append(append(append([]renderResult{}, rasterResults...), pdfResults...), epubResults...)
+
+	// Persist the full machine-readable report before printing the human
+	// summary, so _site/report.json always reflects this exact build.
+	writeReportJSON(outDir, buildTotal, *jobs, *verbose, phases.allPhases(), allResults, log)
+
+	printSummary(phases, buildTotal, allResults, *jobs, benchElapsed)
 }
 
-// printSummary renders the closing report: per-phase timings, per-asset
-// outcomes, and a grand total.
-func printSummary(phases *phaseRecorder, raster, pdfs []renderResult, total time.Duration) {
+// printSummary renders the closing report: a phase timeline with ASCII
+// bars, per-group artifact tables with full metrics, throughput numbers,
+// and a grand total. benchElapsed (if non-zero) is the jobs=1 PDF time
+// used to headline the parallel speedup.
+func printSummary(phases *phaseRecorder, total time.Duration, results []renderResult, jobs int, benchElapsed time.Duration) {
 	var b strings.Builder
-	b.WriteString("\n  Build summary\n")
-	b.WriteString("  ------------\n")
-	for _, p := range phases.allPhases() {
-		fmt.Fprintf(&b, "    %-32s %s\n", p.name, p.elapsed.Round(time.Millisecond))
+
+	phaseSum, _ := phases.phaseStats()
+
+	b.WriteString("\n")
+	b.WriteString("  ╔══════════════════════════════════════════════════════════════╗\n")
+	b.WriteString("  ║                 docsgen performance report                 ║\n")
+	b.WriteString("  ╚══════════════════════════════════════════════════════════════╝\n")
+
+	// big headline metrics
+	okCount := 0
+	var totalBytes int64
+	for _, r := range results {
+		if r.ok {
+			okCount++
+			totalBytes += r.bytes
+		}
 	}
-	b.WriteString(resultsTable(raster, "raster assets"))
-	b.WriteString(resultsTable(pdfs, "theme PDFs"))
-	fmt.Fprintf(&b, "    %-32s %s\n", "total", total.Round(time.Millisecond))
+	throughput := 0.0
+	rate := 0.0
+	if total.Seconds() > 0 {
+		throughput = float64(okCount) / total.Seconds()
+		rate = float64(totalBytes) / (1 << 20) / total.Seconds()
+	}
+	fmt.Fprintf(&b, "  wall time      %s\n", total.Round(time.Millisecond))
+	fmt.Fprintf(&b, "  artifacts      %d ok / %d total\n", okCount, len(results))
+	fmt.Fprintf(&b, "  total size     %s\n", formatBytes(int(totalBytes)))
+	fmt.Fprintf(&b, "  throughput     %.1f artifacts/s  ·  %.2f MiB/s\n", throughput, rate)
+	fmt.Fprintf(&b, "  phase sum      %s  (%.1fx of wall time → parallelism)\n",
+		phaseSum.Round(time.Millisecond), ratioOf(phaseSum, total))
+	if benchElapsed > 0 {
+		speedup := ratioOf(benchElapsed, total)
+		fmt.Fprintf(&b, "  PARALLELISM   jobs=%d · sequential %.2fs → parallel %.2fs = %.2fx speedup\n",
+			jobs, benchElapsed.Seconds(), total.Seconds(), speedup)
+	}
+
+	// grouped artifact tables
+	for _, group := range []string{groupRaster, groupPDF, groupEPUB} {
+		var groupResults []renderResult
+		for _, r := range results {
+			if r.group == group {
+				groupResults = append(groupResults, r)
+			}
+		}
+		b.WriteString(renderResultsTable(groupResults, titleForGroup(group)))
+	}
+
+	// phase timeline with bars
+	b.WriteString(phasesTable(phases.allPhases(), total))
+
 	log := newBuildLogger(false)
 	log.Infof("%s", strings.TrimRight(b.String(), "\n"))
+}
+
+func titleForGroup(group string) string {
+	switch group {
+	case groupRaster:
+		return "Raster assets (PNG/OG card)"
+	case groupPDF:
+		return "Theme PDFs (headless Chrome)"
+	case groupEPUB:
+		return "Theme EPUBs (no Chrome)"
+	}
+	return group
+}
+
+// ratioOf returns d as a multiple of total (for parallelism headlines).
+func ratioOf(d, total time.Duration) float64 {
+	if total <= 0 {
+		return 0
+	}
+	return float64(d) / float64(total)
 }
 
 // writeTextAssets writes every static text file to outDir, reporting each
@@ -230,8 +368,8 @@ func heroSection() Section {
  ###   ###        #     #   # #####   #     #     #         #     ####  #
 `
 	return Section{
-		ID:      "hero",
-		Title:   "go-pretty-pdf",
+		ID:      heroSectionID,
+		Title:   siteName,
 		Eyebrow: "MDX &rarr; PDF, via headless Chrome",
 		Content: `<pre class="hero-ascii">` + ascii + `</pre>
 <div class="hero-line"></div>
@@ -473,7 +611,7 @@ func buildDocsHTML(sections []Section) string {
 		cls := "section"
 		eyebrow := ""
 		headingTag := "h2"
-		if s.ID == "hero" {
+		if s.ID == heroSectionID {
 			cls = "section hero-section"
 			eyebrow = fmt.Sprintf(`<p class="hero-eyebrow">%s</p>`, s.Eyebrow)
 			// The hero is the page's single <h1>; every other section heading

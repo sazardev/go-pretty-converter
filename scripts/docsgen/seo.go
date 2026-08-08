@@ -325,15 +325,21 @@ func sitemapXML() string {
 	addURL(siteBaseURL+llmsFileName(), "weekly", "0.9")
 	addURL(siteBaseURL+"llms-full.txt", "weekly", "0.8")
 	addURL(siteBaseURL+"humans.txt", "monthly", "0.2")
+	addURL(siteBaseURL+"docs.md", "weekly", "0.7")
+	addURL(siteBaseURL+"docs-search.json", "monthly", "0.2")
+	addURL(siteBaseURL+"report.json", "monthly", "0.1")
+	addURL(siteBaseURL+"version.json", "monthly", "0.1")
 
-	// One indexable entry per builtin theme PDF — the whole point of the
-	// site is "look how different the same Markdown can render", so each
-	// theme artifact is valuable on its own.
+	// One indexable entry per builtin theme PDF and EPUB — the whole point
+	// of the site is "look how different the same Markdown can render", so
+	// each theme artifact is valuable on its own.
 	for _, t := range theme.List() {
 		addURL(siteBaseURL+docsPDFFilename(t.Name), "monthly", "0.7")
+		addURL(siteBaseURL+docsEPUBFilename(t.Name), "monthly", "0.6")
 	}
-	// The canonical default (classic) is also served at the stable URL.
+	// The canonical defaults (classic) are also served at the stable URLs.
 	addURL(siteBaseURL+docsPDFDefault, "monthly", "0.7")
+	addURL(siteBaseURL+docsEPUBDefault, "monthly", "0.6")
 	addURL(siteBaseURL+"library-demo.pdf", "monthly", "0.3")
 	addURL(siteBaseURL+"full-demo.pdf", "monthly", "0.3")
 
@@ -446,11 +452,18 @@ _ = pdf.Build(ctx) // ctx is context.Context; optional audit via pdf.LastAudit()
 
 - Marketing homepage: ` + siteBaseURL + `
 - Full documentation (single page): ` + siteBaseURL + `docs.html
+- Full documentation (source markdown): ` + siteBaseURL + `docs.md
 - Repository: ` + siteRepoURL + `
 - Go package reference: https://pkg.go.dev/github.com/sazardev/go-pretty-pdf
 - CLI reference: ` + siteBaseURL + `docs.html#cli-reference
 - Themes: ` + siteBaseURL + `docs.html#themes
 - Changelog: ` + siteBaseURL + `docs.html#changelog
+
+## Downloads
+
+- Docs PDF (default theme): ` + siteBaseURL + `go-pretty-pdf-docs.pdf
+- Docs EPUB (default theme): ` + siteBaseURL + `go-pretty-pdf-docs.epub
+- Per-theme PDFs and EPUBs are also published (go-pretty-pdf-docs-<theme>.pdf/.epub), one per builtin theme.
 
 ## FAQ (for assistants)
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	prettypdf "github.com/sazardev/go-pretty-pdf"
+	"github.com/sazardev/go-pretty-pdf/mdx"
 	"github.com/sazardev/go-pretty-pdf/render"
 	"github.com/sazardev/go-pretty-pdf/theme"
 )
@@ -30,6 +31,47 @@ func docsPDFFilename(themeID string) string {
 
 var readmeBadgesRe = regexp.MustCompile(`(?m)^\[!\[.*\n?`)
 
+// prepareDocsSource writes the three docs sources (README + CLI + changelog)
+// into a fresh temp directory as frontmattered MDX, the exact same source
+// a real `pretty-pdf build` would consume, and returns that directory plus
+// the parsed documents. PDF and EPUB builders share the same parsed
+// content; PDFs re-derive their own copy through prettypdf.New (the
+// dogfooding path), while EPUBs use the documents directly.
+//
+// Badge images point at shields.io/pkg.go.dev and would just render as
+// broken-image glyphs: WithNetworkAccess defaults to false, matching the
+// CLI's own safe default for untrusted MDX sources, so they're stripped
+// here.
+func prepareDocsSource(readme, cli, changelog []byte) (srcDir string, docs []*mdx.Document, err error) {
+	srcDir, err = os.MkdirTemp("", "go-pretty-pdf-docs-src-*")
+	if err != nil {
+		return "", nil, err
+	}
+
+	cleanReadme := readmeBadgesRe.ReplaceAll(readme, nil)
+
+	sources := []struct {
+		file, id, title string
+		body            []byte
+	}{
+		{"01-docs.mdx", "[1.0.0]", siteName, cleanReadme},
+		{"02-cli.mdx", "[2.0.0]", "CLI Reference", cli},
+		{"03-changelog.mdx", "[3.0.0]", "Changelog", changelog},
+	}
+	for _, d := range sources {
+		content := fmt.Sprintf("---\nid: %q\ntitle: %q\n---\n\n%s", d.id, d.title, d.body)
+		if werr := os.WriteFile(filepath.Join(srcDir, d.file), []byte(content), 0644); werr != nil {
+			return "", nil, werr
+		}
+	}
+
+	docs, err = parseDocsSource(srcDir)
+	if err != nil {
+		return "", nil, err
+	}
+	return srcDir, docs, nil
+}
+
 // generateDocsPDF renders README.md + docs/cli.md + CHANGELOG.md into one
 // downloadable PDF per builtin theme, using the same code path a real
 // user's `pretty-pdf build` would take — dogfooding the actual public
@@ -43,35 +85,18 @@ var readmeBadgesRe = regexp.MustCompile(`(?m)^\[!\[.*\n?`)
 // render, so this scales almost linearly until the machine saturates).
 // Each result is reported individually so the summary shows exactly which
 // themes succeeded and which were skipped.
-func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLogger, jobs int) []renderResult {
-	srcDir, err := os.MkdirTemp("", "go-pretty-pdf-docs-src-*")
+func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLogger, jobs int, noOutline, noTagged bool) []renderResult {
+	srcDir, _, err := prepareDocsSource(readme, cli, changelog)
 	if err != nil {
-		log.Warnf("skipping docs PDF, could not create temp dir: %v", err)
+		log.Warnf("skipping docs PDF, could not prepare source: %v", err)
 		return nil
 	}
 	defer func() { _ = os.RemoveAll(srcDir) }()
 
-	// Badge images point at shields.io/pkg.go.dev and would just render as
-	// broken-image glyphs: WithNetworkAccess defaults to false, matching
-	// the CLI's own safe default for untrusted MDX sources.
-	cleanReadme := readmeBadgesRe.ReplaceAll(readme, nil)
-
-	docs := []struct {
-		file, id, title string
-		body            []byte
-	}{
-		{"01-docs.mdx", "[1.0.0]", "go-pretty-pdf", cleanReadme},
-		{"02-cli.mdx", "[2.0.0]", "CLI Reference", cli},
-		{"03-changelog.mdx", "[3.0.0]", "Changelog", changelog},
-	}
-	for _, d := range docs {
-		content := fmt.Sprintf("---\nid: %q\ntitle: %q\n---\n\n%s", d.id, d.title, d.body)
-		if err := os.WriteFile(filepath.Join(srcDir, d.file), []byte(content), 0644); err != nil {
-			log.Warnf("skipping docs PDF, could not write %s: %v", d.file, err)
-			return nil
-		}
-	}
-
+	// Each theme PDF boots its own headless Chrome and renders in
+	// parallel. Measured: sharing one Chrome across concurrent renders
+	// *serializes* them (single-process contention), so per-PDF browsers
+	// win at jobs>1; the flags in render.NewBrowser shave startup off each.
 	themes := theme.List()
 	sem := make(chan struct{}, jobs)
 	var wg sync.WaitGroup
@@ -87,11 +112,12 @@ func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLog
 
 			outPath := filepath.Join(outDir, docsPDFFilename(t.Name))
 			t0 := time.Now()
-			err := buildOneDocsPDF(srcDir, outPath, t.Name, log)
-			res := renderResult{name: t.Name, elapsed: time.Since(t0), ok: err == nil}
+			err := buildOneDocsPDF(srcDir, outPath, t.Name, log, noOutline, noTagged)
+			res := renderResult{name: t.Name, group: groupPDF, elapsed: time.Since(t0), ok: err == nil}
 			if err != nil {
 				res.err = err
 			} else if info, serr := os.Stat(outPath); serr == nil {
+				res.bytes = info.Size()
 				res.note = formatBytes(int(info.Size()))
 			}
 			if res.ok && t.Name == theme.NameClassic {
@@ -116,16 +142,18 @@ func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLog
 	return results
 }
 
-func buildOneDocsPDF(srcDir, outPath, themeID string, log *buildLogger) error {
+func buildOneDocsPDF(srcDir, outPath, themeID string, log *buildLogger, noOutline, noTagged bool) error {
 	pdf, err := prettypdf.New(
 		prettypdf.WithSourceDir(srcDir),
 		prettypdf.WithOutputFile(outPath),
-		prettypdf.WithTitle("go-pretty-pdf"),
+		prettypdf.WithTitle(siteName),
 		prettypdf.WithSubtitle("Write Markdown. Ship a book."),
 		prettypdf.WithAuthor("sazardev"),
 		prettypdf.WithHeaderTitle("go-pretty-pdf — Documentation"),
 		prettypdf.WithThemeName(themeID, theme.Options{}),
 		prettypdf.WithTimeout(120*time.Second),
+		prettypdf.WithGenerateDocumentOutline(!noOutline),
+		prettypdf.WithGenerateTaggedPDF(!noTagged),
 	)
 	if err != nil {
 		return fmt.Errorf("configuring PDF build: %w", err)

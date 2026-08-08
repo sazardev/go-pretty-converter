@@ -78,13 +78,14 @@ func generateRasterAssets(outDir string, log *buildLogger, jobs int) []renderRes
 			defer cancel()
 
 			buf, err := screenshotHTML(tabCtx, html, width, height)
-			res := renderResult{name: name, elapsed: time.Since(t0), ok: err == nil}
+			res := renderResult{name: name, group: groupRaster, elapsed: time.Since(t0), ok: err == nil}
 			if err != nil {
 				res.err = fmt.Errorf("render: %w", err)
 			} else if werr := os.WriteFile(filepath.Join(outDir, name), buf, 0644); werr != nil {
 				res.err = fmt.Errorf("write: %w", werr)
 				res.ok = false
 			} else {
+				res.bytes = int64(len(buf))
 				res.note = formatBytes(len(buf))
 			}
 
