@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-12
+
 ### Added
 
 - **More exports from `scripts/docsgen`**: one EPUB per builtin theme (`go-pretty-pdf-docs-<theme>.epub`) plus a canonical default, raw markdown sources (`README.md`, `docs.md`, `CHANGELOG.md`), a client/agent search index (`docs-search.json`), a machine-readable build manifest (`version.json`), a plain-text `sitemap.txt`, and a full performance report (`report.json`).
@@ -299,6 +301,7 @@ Known limitation: Chrome reserves a small, fixed ~0.2in strip at the very top/bo
 - GitHub Actions CI (lint, test, vet, build on 3 OS) and release pipeline (goreleaser)
 - Local Makefile with lint, test, build, and release-dry-run targets
 
+[0.11.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.11.0
 [0.10.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.10.0
 [0.9.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.9.0
 [0.8.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.8.0
