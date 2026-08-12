@@ -84,3 +84,35 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 2. Add tests for new functionality
 3. Run `make lint` and `make test` before submitting
 4. Keep PRs focused — one feature or fix per PR
+
+## Releasing (versioning, bump, changelog)
+
+SemVer (`MAJOR.MINOR.PATCH`); release tags carry a `v` prefix (`v0.10.0`).
+The single source of truth is `version/version.go`; every build path reads it
+or injects it at build time:
+
+- plain `go build`: uses `version/version.go` directly
+- `make build` / `make install`: ldflags from `git describe --tags`
+- goreleaser: `-X .../version.Version={{ .Version }}` (the tag, `v`-prefixed)
+
+To cut a release:
+
+1. **Move the changelog**: rename `## [Unreleased]` in `CHANGELOG.md` to a
+   dated `## [X.Y.Z] - YYYY-MM-DD` and start a fresh `[Unreleased]` on top.
+   `make bump-*` never touches `CHANGELOG.md`, so do this first — the entry
+   ships in the tag.
+2. **Bump**: `make bump-patch` (or `bump-minor` / `bump-major`). This reads
+   `version/version.go`, increments it, commits `chore: bump version to
+   X.Y.Z`, and creates the annotated tag `vX.Y.Z`.
+3. **Push**: `git push && git push --tags`. Tag pushes trigger
+   `.github/workflows/release.yml` — tests on 3 OSes, then goreleaser builds
+   the binaries and drafts the GitHub release.
+
+Checks before pushing the tag:
+
+- The tag is `v`-prefixed (the workflow only reacts to `v*`) and equals what
+  `pretty-pdf version` prints.
+- The `[X.Y.Z]` changelog date is the release day, and the section exists
+  (the changelog's own header links `[X.Y.Z]` against `vX.Y.Z`).
+- The next docs build picks the version up into `_site/version.json`
+  automatically — nothing to hand-edit.

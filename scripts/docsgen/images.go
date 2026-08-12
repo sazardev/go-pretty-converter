@@ -144,9 +144,10 @@ html,body{margin:0;padding:0;background:#282828;height:100%;}
 </style></head><body><div class="mark"><span>&gt;_</span></div></body></html>`
 }
 
-// ogImageHTML is the 1200x630 social-share card, using the same gruvbox
-// tokens (bg/ink/accent) the landing page previews by default — see
-// landingDefaultTheme in landing.go.
+// ogImageHTML is the 1200x630 social-share card. It deliberately uses a
+// dark gruvbox palette (bg/ink/accent) — not the site's light "default"
+// theme — because high-contrast dark cards stand out in social feeds and
+// are what most readers see when the page is shared without visiting it.
 func ogImageHTML() string {
 	return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;padding:0;width:1200px;height:630px;background:#282828;}

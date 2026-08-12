@@ -16,10 +16,12 @@ go test ./...
 go test ./mdx/... -run TestParserParseFile -v
 make lint            # golangci-lint v2 (golangci-lint binary must be installed)
 make test            # go test -race ./...
+go run ./scripts/docsgen   # regenerate _site/ (gitignored GH Pages output, needs Chrome)
 ```
 
-CI runs `go mod tidy` with a `git diff --exit-code` check, so keep `go.mod`/`go.sum` tidy
-(`make tidy`). Full CI order: tidy → lint → test (-race, 3 OS matrix) → vet → vulncheck → build.
+`--source` defaults to `book/` (the bundled demo book). CI runs `go mod tidy` with a
+`git diff --exit-code` check, so keep `go.mod`/`go.sum` tidy (`make tidy`). Full CI order:
+tidy → lint → test (-race, 3 OS matrix) → vet → vulncheck → build.
 
 ## Architecture
 
@@ -47,6 +49,9 @@ config/            go-pretty-pdf.yml parsing, units (mm/in/pt) handling
   On `linux/arm64` no prebuilt exists, so Chrome must be installed and passed via `--chrome-path`.
 - Render-path tests skip automatically when no Chrome is found; chromemgr download tests are gated
   behind `CHROMEMGR_INTEGRATION=1`.
+- `make lint` enforces import grouping via goimports (`.golangci.yml`): stdlib + third-party first,
+  then `github.com/sazardev/go-pretty-pdf` imports in a separate group. `examples/` and `bin/` are
+  excluded from lint/format checks.
 
 ## Key conventions
 
@@ -62,5 +67,15 @@ config/            go-pretty-pdf.yml parsing, units (mm/in/pt) handling
 
 ## Doc conventions
 
-Keep docs in sync with the CLI: command flags are documented in `docs/cli.md`, and the theme tables in
-`README.md` (count of builtin themes, etc.) drift easily — verify against `theme/assets/` before claiming a number.
+`docs/cli.md` is hand-maintained (not generated) but is *consumed* by `scripts/docsgen` to build
+`_site/`, so stale flags propagate into the site. Command flags live in `docs/cli.md`; theme tables
+in `README.md` (count of builtin themes, etc.) drift easily — verify against `theme/assets/` before
+claiming a number.
+
+## Versioning & releases
+
+SemVer with a `v` tag prefix; single source of truth is `version/version.go` (all build paths
+inject it: Makefile via `git describe`, goreleaser via the tag). `make bump-patch|bump-minor|bump-major`
+commits `version.go` and tags `vX.Y.Z` but does **not** touch `CHANGELOG.md` — move `[Unreleased]`
+into a dated `## [x.y.z]` section first, and keep the footer version-links in sync. Tag pushes
+(`v*`) trigger `.github/workflows/release.yml`. Full runbook: `CONTRIBUTING.md`.

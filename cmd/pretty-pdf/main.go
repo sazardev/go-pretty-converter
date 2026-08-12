@@ -73,10 +73,33 @@ var rootCmd = &cobra.Command{
 	Use:   "pretty-pdf",
 	Short: "Transform MDX files into beautiful, print-ready PDFs",
 	Long: output.PrimaryStyle.Render(`
-  go-pretty-pdf transforms a directory of MDX files into a print-ready PDF
-  via headless Chrome. Documents are sorted by their [X.Y.Z] frontmatter ID.
-  Supports custom components, themes, CSS overrides, and YAML configuration.
-`) + "\n  " + output.MutedStyle.Render("https://github.com/sazardev/go-pretty-pdf"),
+  go-pretty-pdf transforms a directory of Markdown/MDX files into print-ready
+  PDFs (and EPUB 3) via headless Chrome — as a CLI or a Go library.
+
+    • 17 built-in themes over one shared stylesheet, tweakable without CSS
+      via --color-*/--font-*/--density or theme_options in go-pretty-pdf.yml
+    • auto table of contents, PDF bookmarks, print-ready sizes (6x9in, A5, mm/in)
+    • automatic quality audit after every render (overflow, low contrast,
+      broken anchors, unloaded fonts, ...)
+    • zero-install Chrome: a headless build is downloaded on first render
+    • no LaTeX, no design tool — Markdown + a binary
+
+  Documents are ordered by their [X.Y.Z] frontmatter id, not by filename.
+  A missing frontmatter block is fine: id/title are derived from the filename.
+
+  Quick start:
+    pretty-pdf init my-book
+    pretty-pdf build --source my-book --out my-book.pdf
+    pretty-pdf check --source my-book
+`) + "\n  " + output.MutedStyle.Render("https://github.com/sazardev/go-pretty-pdf · https://sazardev.github.io/go-pretty-pdf/"),
+	Example: `  # one-shot PDF from a docs folder
+  pretty-pdf build --source ./docs --out ./docs.pdf
+
+  # PDF + EPUB in a single pass
+  pretty-pdf build --format pdf,epub --out mybook
+
+  # validate only — great for CI
+  pretty-pdf check --strict --source ./docs`,
 	SilenceUsage: true,
 }
 
@@ -91,28 +114,62 @@ for each format. Chrome is only required when PDF is in the format list.
 
 Pick a theme with --theme (see 'pretty-pdf theme list'), then customize it
 without writing CSS via --color-*/--font-*/--density, or drop sections with
---no-cover/--no-toc/--no-page-numbers/--no-header.`,
-	Example: `  pretty-pdf build --format pdf,epub --out mybook
-  pretty-pdf build --format epub --out mybook.epub
-  pretty-pdf build --theme corporate --color-primary "#0ea5e9"
+--no-cover/--no-toc/--no-page-numbers/--no-header.
+
+After rendering, an automatic quality audit reports anything worth a second
+look (overflow, low contrast, broken anchors, unloaded fonts, empty output, ...)
+and the summary's Warnings count mirrors it. The audit is advisory: a
+non-zero Warnings count does not fail the build.
+
+Large books: PDF bookmarks and accessibility tagging are the most expensive
+parts of the render — pass --no-outline --no-tagged-pdf to cut build time on
+very big documents (see BENCHMARKS.md for measured numbers).`,
+	Example: `  # one-shot PDF from a docs folder
+  pretty-pdf build --source ./docs --out ./docs.pdf
+
+  # PDF + EPUB in a single pass (base name gets both extensions)
+  pretty-pdf build --format pdf,epub --out mybook
+
+  # branded client report
+  pretty-pdf build --theme corporate --color-primary "#0ea5e9" --font-heading "Georgia, serif"
+
+  # dark theme without cover or page numbers
   pretty-pdf build --theme dark --no-cover --no-page-numbers
-  pretty-pdf build --theme my-custom-theme --density compact
-  pretty-pdf build --css custom.css --template custom.html`,
+
+  # everything from a config file (title, author, vars, render settings)
+  pretty-pdf build --config ./go-pretty-pdf.yml
+
+  # machine-readable output for tooling/CI
+  pretty-pdf build --json --quiet`,
 	RunE: runBuild,
 }
 
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Validate MDX files",
-	Long:  "Parse and validate all MDX files in the source directory without building a PDF.",
-	RunE:  runCheck,
+	Long: `Parse and validate all MDX files without building anything. No Chrome required.
+
+Checks: required frontmatter fields, [X.Y.Z] id format, duplicate ids, maximum
+heading depth, and content-level warnings. Content warnings are reported but
+do not fail the run; --strict promotes them to errors — the switch for CI gates.
+
+Exit status: 0 when the source is valid, 1 when validation fails.`,
+	Example: `  pretty-pdf check --source ./docs
+  pretty-pdf check --strict --source ./docs   # fail on content warnings too
+  pretty-pdf check --quiet                    # only print errors`,
+	RunE: runCheck,
 }
 
 var initCmd = &cobra.Command{
 	Use:   "init [directory]",
 	Short: "Scaffold a new book project",
-	Long: `Scaffold a new book project with a sample MDX file, configuration, and directory structure.
-Run 'pretty-pdf init my-book' to create a new project in the 'my-book' directory.`,
+	Long: `Scaffold a new book project: a sample MDX file, go-pretty-pdf.yml, and the
+directory structure, ready to 'pretty-pdf build' immediately.
+
+Interactive by default: a terminal form asks for title, author, theme, and
+source directory. Pass --bare to skip the form and set everything with flags.`,
+	Example: `  pretty-pdf init my-book
+  pretty-pdf init my-book --bare --title "My Book" --author "Jane Doe" --theme corporate`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runInit,
 }
@@ -120,23 +177,35 @@ Run 'pretty-pdf init my-book' to create a new project in the 'my-book' directory
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Watch for changes and rebuild automatically",
-	Long:  "Watch the source directory for changes and rebuild the PDF on every file change.",
-	RunE:  runWatch,
+	Long: `Watch the source directory and rebuild the PDF whenever a .md/.mdx/.txt,
+.yaml, or .yml file changes (changes are debounced by 300ms). It builds once
+immediately so the output exists before you edit anything.
+
+Rendering is a PDF build, so Chrome is required. Press Ctrl+C to stop — a
+summary of successful builds and errors is printed on exit.`,
+	Example: `  pretty-pdf watch --source ./book --out ./book.pdf`,
+	RunE:    runWatch,
 }
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(output.PrimaryStyle.Render("go-pretty-pdf") + " " + output.MutedStyle.Render("v"+version.Version))
+		if noColor {
+			output.NoColor()
+		}
+		fmt.Println(output.PrimaryStyle.Render("go-pretty-pdf") + " " + output.MutedStyle.Render(version.Version))
 	},
 }
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Preview MDX as HTML in the browser",
-	Long:  "Parse MDX files, compose HTML, and serve with live reload on file changes. No Chrome required.",
-	RunE:  runServe,
+	Long: `Parse the source and serve a live HTML preview with automatic reload on file
+changes, delivered via Server-Sent Events. No Chrome required — the fastest
+way to iterate on content before the final print render.`,
+	Example: `  pretty-pdf serve --source ./book --port 8080`,
+	RunE:    runServe,
 }
 
 var epubCmd = &cobra.Command{
@@ -144,9 +213,14 @@ var epubCmd = &cobra.Command{
 	Short: "Build an EPUB from MDX source files",
 	Long: `Parse MDX files, validate them, and write a single EPUB 3 file — no
 Chrome/Chromium required, unlike 'build'. Each MDX document becomes its own
-chapter, in the same order as the PDF's table of contents.`,
-	Example: `  pretty-pdf epub --title "My Book" --author "Jane Doe"
-  pretty-pdf epub --cover-image cover.png --out mybook.epub`,
+chapter, in the same order as the PDF's table of contents.
+
+The theme is reused for EPUB (reflowable stylesheet: relative units, no
+print-only rules). --cover-image (or render.cover_image) becomes a full-bleed
+first page, and --language sets the BCP-47 language tag.`,
+	Example: `  pretty-pdf epub --source ./book --out ./book.epub
+  pretty-pdf epub --title "My Book" --author "Jane Doe" --language es
+  pretty-pdf epub --cover-image ./cover.png --out ./book.epub`,
 	RunE: runEpub,
 }
 

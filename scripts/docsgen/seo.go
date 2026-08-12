@@ -417,7 +417,7 @@ Chrome at all.
 pretty-pdf init my-book
 cd my-book
 pretty-pdf build            # -> out.pdf
-pretty-pdf build --formats pdf,epub
+pretty-pdf build --format pdf,epub
 pretty-pdf check            # validate only (no render)
 pretty-pdf serve            # live HTML preview with live reload
 pretty-pdf watch            # rebuild PDF on change
@@ -469,7 +469,7 @@ _ = pdf.Build(ctx) // ctx is context.Context; optional audit via pdf.LastAudit()
 
 - Does it require LaTeX? No. PDFs are rendered by headless Chrome from Markdown.
 - Does it require a manual Chrome install? Usually not; chromemgr auto-downloads a headless Chrome build on first render unless ` + "`--chrome-path`" + `/system Chrome is found.
-- Can it build EPUBs? Yes, via ` + "`pretty-pdf epub`" + ` or ` + "`--formats pdf,epub`" + `; EPUB needs no Chrome.
+- Can it build EPUBs? Yes, via ` + "`pretty-pdf epub`" + ` or ` + "`--format pdf,epub`" + `; EPUB needs no Chrome.
 - What input files? ` + "`.mdx`" + `, ` + "`.md`" + `, and ` + "`.txt`" + `. Frontmatter ` + "`id`" + ` (e.g. ` + "`[1.2.0]`" + `) controls document order.
 - Can I use my own theme? Yes — a custom ` + "`.theme.yml`" + ` theme, or per-theme overrides (` + "`--color-primary`" + `, ` + "`--font-heading`" + `, etc.).
 - Is it free? MIT licensed, open source, no paid tier.
@@ -547,7 +547,7 @@ on linux/arm64 provide one with --chrome-path.
 $ pretty-pdf init my-book
 $ cd my-book
 $ pretty-pdf build                 # -> out.pdf
-$ pretty-pdf build --formats pdf,epub
+$ pretty-pdf build --format pdf,epub
 $ pretty-pdf check                 # validate only (no render)
 $ pretty-pdf serve                 # live HTML preview with live reload
 $ pretty-pdf watch                 # rebuild PDF on change
@@ -567,11 +567,13 @@ $ pretty-pdf theme list            # 17 builtin themes + custom .theme.yml
 
 ## Configuration (go-pretty-pdf.yml)
 
-Key fields: theme (builtin name or .theme.yml path), paper (e.g. 6x9in, A5,
-or exact mm/in), title, subtitle, author, cover_image, output, formats,
-no_cover, no_toc, no_page_numbers, no_header, colors (primary, accent, text,
-muted, bg), fonts (heading, body, code), density (compact/normal/relaxed),
-and custom components.
+Key fields: title, subtitle, author, source, output, theme, css, template,
+vars, lint (require_frontmatter, no_duplicate_ids, max_heading_depth), render
+(timeout, paper e.g. 6x9in or A5 or exact mm/in, margin_*, header_title,
+cover_image), theme_options (colors, fonts, density, sections
+cover/toc/page_numbers/header, allow_network_fonts). CLI flags include
+--format pdf,epub and the --no-cover/--no-toc/--no-page-numbers/--no-header
+section toggles.
 
 ## Built-in components
 

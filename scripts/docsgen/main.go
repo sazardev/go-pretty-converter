@@ -18,28 +18,36 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	goldmarkHtml "github.com/yuin/goldmark/renderer/html"
-
-	"github.com/sazardev/go-pretty-pdf/theme"
 )
 
 //go:embed assets/site.css
 var siteCSS string
 
+//go:embed assets/nav.css
+var navCSS string
+
 //go:embed assets/site.js
 var siteJS string
+
+//go:embed assets/_headers
+var deployHeaders string
 
 const (
 	siteBaseURL     = "https://sazardev.github.io/go-pretty-pdf/"
 	siteHost        = "sazardev.github.io"
 	siteRepoURL     = "https://github.com/sazardev/go-pretty-pdf"
 	siteTitle       = "go-pretty-pdf — Turn Markdown into Beautiful, Print-Ready PDFs (Go)"
-	siteDescription = "go-pretty-pdf turns a folder of Markdown/MDX into a beautifully typeset, print-ready PDF via headless Chrome — as a Go library or CLI. No LaTeX, no design tools."
-	siteKeywords    = "markdown to pdf, mdx to pdf, go pdf generator, golang pdf library, cli pdf generator, print-ready pdf, headless chrome pdf, markdown book generator, mdx renderer"
+	siteDescription = "Turn Markdown/MDX into a print-ready PDF via headless Chrome as a Go library or CLI. No LaTeX. A 3,000-doc book becomes a 3,535-page PDF in ~23 seconds."
+	siteKeywords    = "markdown to pdf, mdx to pdf, go pdf generator, golang pdf library, cli pdf generator, print-ready pdf, headless chrome pdf, markdown book generator, mdx renderer, fast pdf generator, markdown to pdf benchmark"
 )
 
 // siteName is the project display name, reused across metadata, EPUBs, and
 // generated markdown to avoid repeated string literals.
 const siteName = "go-pretty-pdf"
+
+// sectionThemesTitle is the human-readable title of the Themes section,
+// shared by the docs section map, the FAQ/theme tables, and the appbar nav.
+const sectionThemesTitle = "Themes"
 
 // heroSectionID is the landing hero section's stable id, referenced by the
 // docs page assembly and the search index.
@@ -118,6 +126,9 @@ func main() {
 		"llms-full.txt":    llmsFullTXT(),
 		"humans.txt":       humansTXT(),
 		"favicon.svg":      faviconSVG(),
+		// Cache-control/security headers for Cloudflare Pages & Netlify
+		// (GitHub Pages ignores this file; see docs/deployment.md).
+		"_headers": deployHeaders,
 	})
 	buildRawDocs(outDir, root, readme, cli, changelog, log)
 	buildSearchIndex(outDir, sections, log)
@@ -422,7 +433,7 @@ func readmeSections(src []byte, md goldmark.Markdown) []Section {
 		"built-in-components": "Built-in Components",
 		"configuration":       "Configuration",
 		"library-api":         "Library API",
-		"themes":              "Themes",
+		"themes":              sectionThemesTitle,
 		"cli-reference":       "CLI Reference",
 	}
 
@@ -447,7 +458,7 @@ func cliSections(src []byte, md goldmark.Markdown) []Section {
 		"global-flags":       "Global Flags",
 		"commands":           "Commands",
 		"config-file":        "Config File",
-		"themes":             "Themes",
+		"themes":             sectionThemesTitle,
 		"template-variables": "Template Variables",
 		"environment":        "Environment",
 		"exit-codes":         "Exit Codes",
@@ -624,11 +635,11 @@ func buildDocsHTML(sections []Section) string {
 			s.ID, cls, eyebrow, headingTag, s.Title, headingTag, s.Content)
 	}
 
-	docsTitle := "go-pretty-pdf — Full Documentation (CLI Reference, MDX Format, Changelog)"
+	docsTitle := "go-pretty-pdf — CLI Reference, MDX Format & Changelog"
 	docsURL := siteBaseURL + "docs.html"
 
 	return fmt.Sprintf(`<!DOCTYPE html>
-<html lang="en" data-site-theme="classic">
+<html lang="en" data-site-theme="default">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -655,7 +666,7 @@ func buildDocsHTML(sections []Section) string {
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="application-name" content="go-pretty-pdf">
 
-<meta property="og:type" content="article">
+<meta property="og:type" content="website">
 <meta property="og:site_name" content="go-pretty-pdf">
 <meta property="og:title" content="%s">
 <meta property="og:description" content="%s">
@@ -682,17 +693,23 @@ func buildDocsHTML(sections []Section) string {
 <script type="application/ld+json">%s</script>
 <script type="application/ld+json">%s</script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
+
 <style>
+%s
 %s
 </style>
 </head>
 <body>
+%s
+
 <nav class="sidebar">
   <div class="sidebar-brand">
-    <a href="index.html" class="sidebar-home-link">&larr; pretty-pdf</a>
-    <a href="#hero">go-pretty-pdf docs</a>
-    <span class="sidebar-tagline">Write Markdown. Ship a book.</span>
-    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="sidebar-nav" aria-label="Toggle navigation">&#9776;</button>
+    <span class="sidebar-kicker">Sections</span>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="sidebar-nav" aria-label="Toggle sections">&#9776;</button>
   </div>
   <div class="sidebar-nav" id="sidebar-nav">
     %s
@@ -702,7 +719,6 @@ func buildDocsHTML(sections []Section) string {
       <span>Search sections</span>
       <kbd id="palette-shortcut-hint">Ctrl K</kbd>
     </button>
-    %s
   </div>
 </nav>
 <main class="main">
@@ -723,7 +739,9 @@ func buildDocsHTML(sections []Section) string {
 		docsTitle, siteDescription, siteBaseURL,
 		siteHost,
 		jsonLD(), breadcrumbJSONLD(),
-		siteCSS+"\n"+generatedThemeCSS(), strings.Join(navItems, "\n    "), themeSwitcherHTML(), strings.Join(bodyParts, "\n  "), commandPaletteHTML(), siteJS)
+		navCSS, siteCSS+"\n"+generatedThemeCSS(),
+		buildNavHTML("index.html", "docs.html", "docs"),
+		strings.Join(navItems, "\n    "), strings.Join(bodyParts, "\n  "), commandPaletteHTML(), siteJS)
 }
 
 // jsonLD returns the page's structured data: a WebSite entry plus a
@@ -857,7 +875,7 @@ func faqJSONLD() string {
       "name": "Can I build both PDF and EPUB from one source?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. A single command (--formats pdf,epub) builds both formats from the same Markdown in one pass — no separate pipeline to maintain."
+        "text": "Yes. A single command (--format pdf,epub) builds both formats from the same Markdown in one pass — no separate pipeline to maintain."
       }
     },
     {
@@ -872,6 +890,8 @@ func faqJSONLD() string {
 }`
 }
 
+// commandPaletteHTML renders the jump-to-section search dialog, opened by
+// the "Search sections" trigger in the sidebar footer (Ctrl/Cmd+K).
 func commandPaletteHTML() string {
 	return `<div class="command-palette" id="command-palette" role="dialog" aria-modal="true" aria-label="Command palette" hidden>
   <div class="command-palette-backdrop" data-palette-close></div>
@@ -884,31 +904,4 @@ func commandPaletteHTML() string {
     <ul class="command-palette-results" id="command-palette-results"></ul>
   </div>
 </div>`
-}
-
-// themeSwitcherHTML renders one swatch per theme.List() entry — adding a
-// builtin theme to theme/builtin.go is enough for it to show up here, with
-// correct colors (swatchGradient reads the theme's own CSS) and no
-// per-theme code to write.
-func themeSwitcherHTML() string {
-	var b strings.Builder
-	b.WriteString(`<div class="theme-switcher">
-    <span class="theme-switcher-label">Theme</span>
-    <div class="theme-swatches">
-`)
-	for _, t := range theme.List() {
-		pressed := "false"
-		if t.Name == theme.NameClassic {
-			pressed = "true"
-		}
-		name := displayName(t.Name)
-		fmt.Fprintf(&b, `      <button type="button" class="theme-swatch" data-theme="%s" title="%s &mdash; %s" aria-pressed="%s">
-        <span class="swatch-dot" style="background:%s"></span>
-        <span class="theme-swatch-label">%s</span>
-      </button>
-`, t.Name, name, t.Description, pressed, swatchGradient(t), name)
-	}
-	b.WriteString(`    </div>
-  </div>`)
-	return b.String()
 }

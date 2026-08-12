@@ -9,6 +9,10 @@ Transform a directory of MDX files into a beautiful, print-ready PDF via headles
 
 **Library + CLI.** Use it as a composable Go library or as a standalone command-line tool.
 
+**Fast.** A 3,000-document book becomes a 3,535-page print-ready PDF in ~23 seconds — and
+validating those 3,000 documents takes 142 ms. Measured, reproducible numbers in
+[BENCHMARKS.md](BENCHMARKS.md).
+
 ## Install
 
 ### CLI (binary)
@@ -119,6 +123,25 @@ headless Chrome's network access is blocked while rendering (see
 content — but they still run. **Only build PDFs from source files you
 trust.** See [SECURITY.md](SECURITY.md)
 for details.
+
+## Performance
+
+`go-pretty-pdf` keeps the Go-side pipeline (parse + validate + compose)
+sub-second even on large books; headless Chrome's print step is what drives
+PDF wall time. Measured on an i5-13500 (WSL2) with Chromium 150:
+
+| Source docs | `check` | `epub` | PDF pages | PDF wall time | PDF throughput |
+|------------:|--------:|-------:|----------:|--------------:|---------------:|
+| 100         | 30 ms   | 27 ms  | 121       | 0.57 s        | 211 pages/s    |
+| 1,000       | 62 ms   | 88 ms  | 1,180     | 2.99 s        | 394 pages/s    |
+| 3,000       | 142 ms  | 248 ms | 3,535     | 23.02 s       | 154 pages/s    |
+
+Full table, hardware, and a reproducible recipe:
+[BENCHMARKS.md](BENCHMARKS.md). To measure your own machine:
+
+```bash
+PRETTY_PDF_CHROME_PATH=/usr/bin/chromium go run ./scripts/benchmark --color=false
+```
 
 ## MDX format
 

@@ -21,12 +21,15 @@ var (
 var themeCmd = &cobra.Command{
 	Use:   "theme",
 	Short: "List, inspect, and manage PDF themes",
-	Long: `Manage go-pretty-pdf's built-in and custom themes: list what's available,
+	Long: fmt.Sprintf(`Manage go-pretty-pdf's built-in and custom themes: list what's available,
 inspect resolved CSS, scaffold new custom themes, and import existing ones.
+
+  %d built-in themes: %s
 
 Themes are also customizable without writing CSS via 'pretty-pdf build' flags
 (--color-*, --font-*, --density, --no-cover/--no-toc/--no-page-numbers/--no-header)
 or the 'theme_options' block in go-pretty-pdf.yml.`,
+		len(theme.List()), strings.Join(themeNames(), ", ")),
 	Example: `  pretty-pdf theme list
   pretty-pdf theme show corporate
   pretty-pdf theme new my-report --from corporate

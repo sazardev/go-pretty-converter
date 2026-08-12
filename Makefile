@@ -81,6 +81,8 @@ bump-patch: ## Bump patch version (x.y.Z)
 	@git commit -m "chore: bump version to $(NEW_VER)"
 	@git tag -a "v$(NEW_VER)" -m "v$(NEW_VER)"
 	@echo "Tagged v$(NEW_VER). Run 'git push --tags' to trigger release."
+	@echo "Note: 'make bump-*' does NOT touch CHANGELOG.md — move the [Unreleased]"
+	@echo "      section into [$(NEW_VER)] before pushing the tag (see CONTRIBUTING.md)."
 
 bump-minor: ## Bump minor version (x.Y.z)
 	@$(eval NEW_VER := $(shell $(GOCMD) run ./scripts/bump/bump.go minor))
@@ -89,6 +91,8 @@ bump-minor: ## Bump minor version (x.Y.z)
 	@git commit -m "chore: bump version to $(NEW_VER)"
 	@git tag -a "v$(NEW_VER)" -m "v$(NEW_VER)"
 	@echo "Tagged v$(NEW_VER). Run 'git push --tags' to trigger release."
+	@echo "Note: 'make bump-*' does NOT touch CHANGELOG.md — move the [Unreleased]"
+	@echo "      section into [$(NEW_VER)] before pushing the tag (see CONTRIBUTING.md)."
 
 bump-major: ## Bump major version (X.y.z)
 	@$(eval NEW_VER := $(shell $(GOCMD) run ./scripts/bump/bump.go major))
@@ -97,6 +101,8 @@ bump-major: ## Bump major version (X.y.z)
 	@git commit -m "chore: bump version to $(NEW_VER)"
 	@git tag -a "v$(NEW_VER)" -m "v$(NEW_VER)"
 	@echo "Tagged v$(NEW_VER). Run 'git push --tags' to trigger release."
+	@echo "Note: 'make bump-*' does NOT touch CHANGELOG.md — move the [Unreleased]"
+	@echo "      section into [$(NEW_VER)] before pushing the tag (see CONTRIBUTING.md)."
 
 ##@ Release
 

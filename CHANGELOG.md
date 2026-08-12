@@ -28,16 +28,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`render.NewBrowser`, `render.RenderToPDFWithAuditBrowser`, and `prettypdf.WithSharedBrowser`**: boot one headless Chrome allocator (with startup-tuned flags) and render many documents against it instead of launching a fresh Chrome per `Build`. Useful for keeping a persistent browser across a batch of renders; measured on this machine it does not beat running each render concurrently, which remains the main parallelism lever. The new browser setup also became the default for `RenderToPDFWithAuditContext`, so every render picks up the reduced-startup flag set.
 - **Large-document audit sampling**: the DOM audit's style-reading checks (`overflow`, `low-contrast`, `page-break-inside-risk`, `line-break-risk`, `heading-clip-risk`, TOC coverage, font-load) now sample the first few thousand matching elements instead of walking the entire tree, since layout reads (`getComputedStyle`, `scrollWidth/Height`) dominate on documents with tens of thousands of nodes and the findings are deduped/capped anyway. Documents render far faster at scale (measured: 5,000-document PDF went from >120s timeout to ~60s).
 - **Speed flags for very large documents**: `--no-outline` (`prettypdf.WithGenerateDocumentOutline(false)`) and `--no-tagged-pdf` (`prettypdf.WithGenerateTaggedPDF(false)`) disable Chrome's post-print outline/bookmark build and accessibility tagging, the two most expensive post-print steps. Measured on a ~500-page document: both off is ~30% faster than both on (~1.1s vs ~1.6s); on docsgen's full theme-PDF set they cut wall time ~10%. Defaults keep both on — bookmarks and PDF/UA accessibility are features.
+- **Full CLI help overhaul**: every command's `--help` now explains what it does, exit status where relevant, performance guidance for large books, and realistic example commands; `theme --help` lists all 17 built-in theme names.
+- **`_headers` deploy config**: the generated site now ships a `_headers` file (per-path `Cache-Control` + security headers incl. CSP) that Cloudflare Pages and Netlify honor out of the box.
 
 ### Changed
 
 - The audit report's `unused-component` finding is attached to `PDF.LastAudit()` after `Build`, so the same report carries both visual and authoring signals.
+- `version` now respects `--no-color` and prints a single `v` prefix (it previously rendered the default `v0.10.0` as `vv0.10.0`).
+- The docs page shares the landing page's appbar (brand, links, theme dropdown, GitHub button, mobile hamburger) and its sidebar, hero, and content styling were aligned with the landing page's visual language; the docs default theme is now `default`.
 
 ### Fixed
 
 - The `duplicate-id` message used the raw DOM node in its text; it now names both elements (`#dup` on … (also on `#dup`)).
 - The new `%%EOF` check originally flagged Chrome's well-formed output because Chrome appends a newline after the marker; the check now tolerates trailing whitespace.
 - `docsgen`'s `report.json` could panic with `index out of range` when computing the fastest/slowest artifact names (indices into the ok-durations slice were confused with indices into the results slice); the scan now tracks names directly.
+- **The docs site's theme switcher showed `classic`'s palette for `default`/`minimal`/`modern`**: the generated `:root` fallback rode on `classic`, whose block sits mid-list, so its unconditional `:root` rule (same specificity as the `[data-site-theme]` blocks, later in source order) overrode the earlier palettes. The `:root` fallback now rides on `default`, the first theme in `theme.List()` order.
+- **CLI-reference fidelity**: corrected the documented flag name `--formats` (the flag is `--format`), the `lint.max_heading_depth` default (5, not 3), and added the undocumented `pdf-empty` audit check to the audit table.
+
+## [0.10.0] - 2026-07-16
+
+### Added
+
+- **Multi-format `build`** (`--format pdf,epub`): render PDF and EPUB in a
+  single pass from one source. A base `--out` name (no extension) is given
+  both extensions automatically, and an `out.pdf`/`out.epub` value pins the
+  matching format while deriving the other. New library option
+  `prettypdf.WithFormats(...)` and the standalone `pretty-pdf epub` command
+  share the same pipeline.
+- **SVG and WebP cover images** for `--cover-image`/`render.cover_image`,
+  alongside the existing PNG/JPG/JPEG formats.
+- **Custom paper dimensions** in `render.paper` (and the matching CLI
+  plumbing): `6x9in`, `6x9`, `6in x 9in`, `152.4mm x 228.6mm` — exact
+  print-on-demand trim sizes beyond the named `letter`/`legal`/`A4`.
 
 ## [0.9.0] - 2026-07-15
 
@@ -277,6 +299,10 @@ Known limitation: Chrome reserves a small, fixed ~0.2in strip at the very top/bo
 - GitHub Actions CI (lint, test, vet, build on 3 OS) and release pipeline (goreleaser)
 - Local Makefile with lint, test, build, and release-dry-run targets
 
+[0.10.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.10.0
+[0.9.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.9.0
+[0.8.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.8.0
+[0.7.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.7.0
 [0.6.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.6.0
 [0.5.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.5.0
 [0.4.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.4.0

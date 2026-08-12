@@ -105,6 +105,7 @@ Right after rendering, `build` runs a best-effort audit of the composed document
 | `page-break-inside-risk` | A table/code block without `page-break-inside: avoid`, so print can slice it mid-row |
 | `line-break-risk` | A block with `orphans`/`widows` below 2, so a single line can be stranded at the top/bottom of a page |
 | `page-count` | The generated PDF has no detectable pages — the output file may be empty or corrupt |
+| `pdf-empty` | The generated PDF is zero bytes — the output file is empty |
 | `pdf-eof-missing` | The generated PDF is missing its `%%EOF` marker — the output may be truncated or corrupt |
 | `unused-component` | A component registered via `WithComponent()` was never used in any document — check the tag spelling |
 
@@ -116,7 +117,7 @@ Before the pipeline starts, `build` verifies (per selected formats):
 
 - Chrome/Chromium is available (only when `pdf` is in the format list)
 - Source directory exists
-- At least one MDX file is present
+- At least one `.md`/`.mdx`/`.txt` file is present
 - Each output path's directory is writable
 - Custom CSS file exists (if specified)
 - Custom template file exists (if specified)
@@ -372,7 +373,7 @@ render:
 |---|---|---|
 | `require_frontmatter` | `["id", "title"]` | Required frontmatter fields |
 | `no_duplicate_ids` | `true` | Reject duplicate document IDs |
-| `max_heading_depth` | `3` | Maximum allowed heading depth |
+| `max_heading_depth` | `5` | Maximum allowed heading depth |
 
 ### `render` fields
 

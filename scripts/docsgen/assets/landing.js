@@ -203,6 +203,48 @@
     });
   }
 
+  // ---------- mobile nav menu ----------
+  function initNavMenu() {
+    var header = document.querySelector("header.nav");
+    var btn = document.getElementById("menuBtn");
+    var links = document.getElementById("navLinks");
+    if (!header || !btn || !links) return;
+
+    function close() {
+      header.classList.remove("menu-open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+    function open() {
+      header.classList.add("menu-open");
+      btn.setAttribute("aria-expanded", "true");
+      var dropdown = document.querySelector(".theme-dropdown");
+      if (dropdown) dropdown.classList.remove("open");
+    }
+    function toggle() {
+      var willOpen = !header.classList.contains("menu-open");
+      if (willOpen) open(); else close();
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggle();
+      var ddBtn = document.getElementById("themeDropdownBtn");
+      if (ddBtn) ddBtn.setAttribute("aria-expanded", "false");
+    });
+    links.addEventListener("click", function (e) {
+      if (e.target.closest("a")) close();
+    });
+    document.addEventListener("click", function (e) {
+      if (!header.contains(e.target)) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 1100) close();
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     wireCopy("copyInstall", "go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest");
     wireCopy("copyInit", "pretty-pdf init my-book");
@@ -210,5 +252,6 @@
     renderTerminal();
     initThemeSwitcher();
     initThemeDropdown();
+    initNavMenu();
   });
 })();

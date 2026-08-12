@@ -53,48 +53,32 @@ func TestBuiltinThemesProduceSiteVars(t *testing.T) {
 }
 
 func TestThemeCSSBlock(t *testing.T) {
-	classic, ok := theme.Get(theme.NameClassic)
+	def, ok := theme.Get(theme.NameDefault)
 	if !ok {
-		t.Fatal("theme.Get(classic) not found")
+		t.Fatal("theme.Get(default) not found")
 	}
-	block := themeCSSBlock(classic)
-
-	if !strings.HasPrefix(block, ":root,\n") {
-		t.Error("classic block should double as the :root fallback")
-	}
-	if !strings.Contains(block, `--site-accent: #7a4a2b;`) {
-		t.Errorf("classic block missing expected accent value: %s", block)
-	}
-	if !strings.Contains(block, "--site-flourish: var(--site-accent);") {
-		t.Error("classic is Accented, flourish should use the accent color")
-	}
-
-	def, _ := theme.Get(theme.NameDefault)
 	defBlock := themeCSSBlock(def)
-	if strings.HasPrefix(defBlock, ":root") {
-		t.Error("only classic should double as the :root fallback")
+
+	// default is both the site's initial theme and the first entry in
+	// theme.List(), so its combined :root rule must be emitted FIRST —
+	// otherwise the unconditional :root selector (same specificity as
+	// [data-site-theme="default"]) would override the default palette.
+	if !strings.HasPrefix(defBlock, ":root,\n") {
+		t.Error("default block should double as the :root fallback (and be first in list order)")
 	}
 	if !strings.Contains(defBlock, "--site-flourish: var(--site-text);") {
 		t.Error("default is not Accented, flourish should use the neutral text color")
 	}
-}
 
-func TestDisplayName(t *testing.T) {
-	tests := map[string]string{
-		"default":   "Default",
-		"corporate": "Corporate",
-		"":          "",
+	classic, _ := theme.Get(theme.NameClassic)
+	classicBlock := themeCSSBlock(classic)
+	if strings.HasPrefix(classicBlock, ":root") {
+		t.Error("only default should carry the :root fallback; classic must not, or its mid-list block overrides default/minimal/modern")
 	}
-	for in, want := range tests {
-		if got := displayName(in); got != want {
-			t.Errorf("displayName(%q) = %q, want %q", in, got, want)
-		}
+	if !strings.Contains(classicBlock, `--site-accent: #7a4a2b;`) {
+		t.Errorf("classic block missing expected accent value: %s", classicBlock)
 	}
-}
-
-func TestSwatchGradientFallsBackOnMissingColors(t *testing.T) {
-	g := swatchGradient(theme.Theme{CSS: "/* no vars */"})
-	if !strings.Contains(g, "#ffffff") || !strings.Contains(g, "#888888") {
-		t.Errorf("swatchGradient() with no colors = %q, want fallback bg/accent", g)
+	if !strings.Contains(classicBlock, "--site-flourish: var(--site-accent);") {
+		t.Error("classic is Accented, flourish should use the accent color")
 	}
 }

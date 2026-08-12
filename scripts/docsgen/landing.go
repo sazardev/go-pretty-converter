@@ -16,10 +16,9 @@ var landingCSS string
 var landingJS string
 
 // landingDefaultTheme is the theme the marketing page previews before a
-// visitor touches the theme switcher — bold and dark on purpose, since this
-// page's job is to be memorable, unlike docs.html's calmer "classic" default
-// for long-form reading.
-const landingDefaultTheme = theme.NameGruvbox
+// visitor touches the theme switcher — the "default" theme, matching the
+// theme a fresh `pretty-pdf build` produces out of the box.
+const landingDefaultTheme = theme.NameDefault
 
 // landingThemeCSS builds one [data-theme="x"] { --bg: ...; } block per
 // builtin theme, read straight from theme.List() — the exact same palette
@@ -137,6 +136,7 @@ func landingThemeDropdownOptions() string {
 // (hero, how-it-works, features, live theme showcase, comparison, CTA)
 // rather than a documentation dump — full reference docs live at docs.html.
 func buildLandingHTML() string {
+	benchURL := siteRepoURL + "/blob/master/BENCHMARKS.md"
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en" data-theme="%s">
 <head>
@@ -171,7 +171,6 @@ func buildLandingHTML() string {
 <meta property="og:description" content="%s">
 <meta property="og:url" content="%s">
 <meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="es_ES">
 <meta property="og:image" content="%sog-image.png">
 <meta property="og:image:url" content="%sog-image.png">
 <meta property="og:image:secure_url" content="%sog-image.png">
@@ -195,44 +194,18 @@ func buildLandingHTML() string {
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
 
 <style>
+%s
 %s
 %s
 </style>
 </head>
 <body>
 
-<header class="nav">
-  <div class="nav-inner">
-    <a href="index.html" class="brand">pretty<span class="dim">-pdf</span></a>
-    <nav class="links">
-      <a href="#how">How it works</a>
-      <a href="#features">Features</a>
-      <a href="#cli">Commands</a>
-      <a href="#themes">Themes</a>
-      <a href="#faq">FAQ</a>
-      <a href="docs.html">Docs</a>
-      <a href="docs.html#changelog">Changelog</a>
-    </nav>
-    <div class="nav-cta">
-      <div class="theme-dropdown">
-        <button type="button" class="theme-dropdown-btn" id="themeDropdownBtn" aria-haspopup="true" aria-expanded="false">
-          <span class="swatches" id="navThemeSwatches">%s</span>
-          <span>Theme: <b id="navThemeLabel">%s</b></span>
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="theme-dropdown-panel" id="themeDropdownPanel" hidden>
-%s        </div>
-      </div>
-      <a class="gh-stars" href="%s" target="_blank" rel="noopener">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 00-2.53 15.59c.4.07.55-.17.55-.38l-.01-1.49c-2.01.44-2.44-.97-2.44-.97-.33-.84-.81-1.06-.81-1.06-.66-.45.05-.44.05-.44.73.05 1.12.75 1.12.75.65 1.11 1.7.79 2.12.6.07-.48.26-.79.46-.97-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.75-1.93-.08-.18-.32-.92.07-1.92 0 0 .61-.2 2 .73a6.9 6.9 0 013.64 0c1.39-.94 2-.73 2-.73.39 1 .15 1.74.07 1.92.47.5.75 1.14.75 1.93 0 2.77-1.69 3.38-3.3 3.56.27.23.51.68.51 1.37l-.01 2.03c0 .2.14.44.55.37A8 8 0 008 0z"/></svg>
-        GitHub
-      </a>
-    </div>
-  </div>
-</header>
+%s
 
 <section class="hero">
   <div class="container">
@@ -292,7 +265,7 @@ func buildLandingHTML() string {
         <h3>One command, two formats</h3>
         <p>A quality audit checks for overflow, broken images, and clipped headings before you ever open the file.</p>
         <pre><span class="c">$</span> pretty-pdf build \
-    --formats pdf,epub</pre>
+    --format pdf,epub</pre>
       </div>
     </div>
   </div>
@@ -328,7 +301,7 @@ func buildLandingHTML() string {
     </div>
     <div class="cmd-grid reveal">
       <div class="cmd"><code>pretty-pdf init my-book</code><span>Scaffold a book: skeleton MDX + config.</span></div>
-      <div class="cmd"><code>pretty-pdf build</code><span>Render a print-ready PDF (and EPUB with --formats).</span></div>
+      <div class="cmd"><code>pretty-pdf build</code><span>Render a print-ready PDF (and EPUB with --format pdf,epub).</span></div>
       <div class="cmd"><code>pretty-pdf check</code><span>Validate source only — no Chrome needed.</span></div>
       <div class="cmd"><code>pretty-pdf epub</code><span>Build an EPUB 3, no Chrome required.</span></div>
       <div class="cmd"><code>pretty-pdf serve</code><span>Live HTML preview with live reload.</span></div>
@@ -376,6 +349,29 @@ func buildLandingHTML() string {
   </div>
 </section>
 
+<section id="performance">
+  <div class="container">
+    <div class="section-head center reveal">
+      <p class="kicker">Measured, not estimated</p>
+      <h2>A 3,000-doc book &mdash; print-ready in ~23 seconds.</h2>
+      <p>Real books rendered end-to-end: parse, validate, compose, Chrome print, and the quality audit are all inside the wall time. Reproducible on your own machine &mdash; full methodology and every size in <a href="%s">BENCHMARKS.md</a>.</p>
+    </div>
+    <div class="reveal" style="overflow-x:auto">
+      <table class="compare">
+        <thead>
+          <tr><th>Source docs</th><th>Validation</th><th>EPUB</th><th>PDF pages</th><th class="hl">PDF wall time</th><th>Throughput</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-label">100</td><td>30 ms</td><td>27 ms</td><td>121</td><td class="hl">0.57 s</td><td>211 pages/s</td></tr>
+          <tr><td class="row-label">1,000</td><td>62 ms</td><td>88 ms</td><td>1,180</td><td class="hl">2.99 s</td><td>394 pages/s</td></tr>
+          <tr><td class="row-label">3,000</td><td>142 ms</td><td>248 ms</td><td>3,535</td><td class="hl">23.02 s</td><td>154 pages/s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cmd-more"><a href="%s" class="text-cta">Full methodology &amp; all sizes &rarr;</a></p>
+  </div>
+</section>
+
 <section id="stats" class="stats-band">
   <div class="container">
     <div class="stats-grid reveal">
@@ -417,7 +413,11 @@ func buildLandingHTML() string {
       </details>
       <details class="faq-item">
         <summary>Can I build PDF and EPUB from one source?</summary>
-        <p>Yes. A single command (<code>--formats pdf,epub</code>) builds both from the same Markdown in one pass &mdash; no separate pipeline.</p>
+        <p>Yes. A single command (<code>--format pdf,epub</code>) builds both from the same Markdown in one pass &mdash; no separate pipeline.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is it fast on big books?</summary>
+        <p>Yes. A 3,000-document book validates in 142 ms and renders a 3,535-page PDF in ~23 s on a mid-range i5. The Go-side pipeline stays sub-second at every size &mdash; see <a href="%s">BENCHMARKS.md</a> for the reproducible methodology.</p>
       </details>
       <details class="faq-item">
         <summary>Is go-pretty-pdf free?</summary>
@@ -474,17 +474,77 @@ func buildLandingHTML() string {
 		siteTitle, siteDescription, siteBaseURL,
 		siteHost,
 		jsonLD(), faqJSONLD(),
-		landingCSS, landingThemeCSS(),
-		themeSwatchSpans(mustTheme(landingDefaultTheme)), landingDefaultTheme, landingThemeDropdownOptions(),
-		siteRepoURL,
+		navCSS, landingCSS, landingThemeCSS(),
+		buildNavHTML("", "", ""),
 		copyIconSVG(),
 		landingThemeCards(), landingDefaultTheme, docsPDFFilename(landingDefaultTheme),
+		benchURL, benchURL, benchURL,
 		copyIconSVG(),
 		siteRepoURL,
 		siteRepoURL,
 		siteRepoURL, siteRepoURL, siteRepoURL,
 		landingJS,
 	)
+}
+
+// buildNavHTML renders the sticky top appbar shared by the landing page and
+// the docs page — same brand, same links, same theme dropdown, same GitHub
+// button — so both pages read as one product. linkPrefix prefixes same-page
+// anchors when the target section lives on another page ("" on the landing
+// page, "index.html" on docs.html); current is the href of the page being
+// viewed ("" to highlight nothing); brandSuffix decorates the brand on the
+// non-home page (e.g. "docs").
+func buildNavHTML(linkPrefix, current, brandSuffix string) string {
+	links := []struct{ href, label string }{
+		{linkPrefix + "#how", "How it works"},
+		{linkPrefix + "#features", "Features"},
+		{linkPrefix + "#themes", sectionThemesTitle},
+		{linkPrefix + "#faq", "FAQ"},
+		{"docs.html", "Docs"},
+	}
+	var b strings.Builder
+	b.WriteString(`<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">pretty<span class="dim">-pdf</span>`)
+	if brandSuffix != "" {
+		fmt.Fprintf(&b, `<span class="brand-suffix">&nbsp;%s</span>`, brandSuffix)
+	}
+	b.WriteString(`</a>
+    <nav class="links" id="navLinks">
+`)
+	for _, l := range links {
+		cls := ""
+		if l.href == current {
+			cls = ` class="is-active"`
+		}
+		fmt.Fprintf(&b, "      <a href=\"%s\"%s>%s</a>\n", l.href, cls, l.label)
+	}
+	b.WriteString(`    </nav>
+    <div class="nav-cta">
+      <div class="theme-dropdown">
+        <button type="button" class="theme-dropdown-btn" id="themeDropdownBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="swatches" id="navThemeSwatches">`)
+	b.WriteString(themeSwatchSpans(mustTheme(landingDefaultTheme)))
+	b.WriteString(`</span>
+          <span>Theme: <b id="navThemeLabel">` + landingDefaultTheme + `</b></span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="theme-dropdown-panel" id="themeDropdownPanel" hidden>
+`)
+	b.WriteString(landingThemeDropdownOptions())
+	b.WriteString(`        </div>
+      </div>
+      <a class="gh-stars" href="` + siteRepoURL + `" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 00-2.53 15.59c.4.07.55-.17.55-.38l-.01-1.49c-2.01.44-2.44-.97-2.44-.97-.33-.84-.81-1.06-.81-1.06-.66-.45.05-.44.05-.44.73.05 1.12.75 1.12.75.65 1.11 1.7.79 2.12.6.07-.48.26-.79.46-.97-1.6-.18-3.29-.8-3.29-3.56 0-.79.28-1.43.75-1.93-.08-.18-.32-.92.07-1.92 0 0 .61-.2 2 .73a6.9 6.9 0 013.64 0c1.39-.94 2-.73 2-.73.39 1 .15 1.74.07 1.92.47.5.75 1.14.75 1.93 0 2.77-1.69 3.38-3.3 3.56.27.23.51.68.51 1.37l-.01 2.03c0 .2.14.44.55.37A8 8 0 008 0z"/></svg>
+        GitHub
+      </a>
+    </div>
+    <button type="button" class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation menu">
+      <span class="menu-bar"></span><span class="menu-bar"></span><span class="menu-bar"></span>
+    </button>
+  </div>
+</header>`)
+	return b.String()
 }
 
 func copyIconSVG() string {

@@ -3,20 +3,26 @@
  *
  * Mirrors the CLI's own theme architecture: a structural base (this file)
  * plus one small override block per builtin theme, keyed off
- * [data-site-theme] on <html>. The eight themes below use the exact
- * palettes and font stacks defined in theme/assets/*.css so the website
- * reads as the same product as the PDFs it produces.
+ * [data-site-theme] on <html>. The themes use the exact palettes and font
+ * stacks defined in theme/assets/*.css so the website reads as the same
+ * product as the PDFs it produces.
+ *
+ * The sticky top appbar (brand, links, theme dropdown, GitHub button, mobile
+ * hamburger) is shared with the landing page and lives in nav.css — this
+ * file bridges the landing's --bg/--ink/... tokens to the site's --site-*.
  */
 
 :root { color-scheme: light; }
 [data-site-theme="dark"] { color-scheme: dark; }
 
 :root {
-  --site-radius: 0px;
-  --site-chrome-font: var(--site-font-code, ui-monospace, 'SF Mono', 'Cascadia Code',
-    'JetBrains Mono', Menlo, Consolas, 'Courier New', monospace);
-  --site-sidebar-w: 258px;
+  --site-radius: 4px;
+  --site-chrome-font: 'Space Mono', var(--site-font-code, ui-monospace, 'SF Mono',
+    'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, 'Courier New', monospace);
+  --site-sidebar-w: 248px;
   --site-line-height: 1.6;
+  /* Height of the sticky top appbar; the fixed sidebar starts below it. */
+  --site-nav-h: 71px;
   /* Used only for site-chrome flourishes that have no equivalent in the
      actual PDF (the hero divider line, the download-PDF button). Defaults
      to the ink color: in the real theme CSS, default/minimal/academic/dark
@@ -25,6 +31,22 @@
      style their cover with the accent color, so they override this below
      to keep the site honest about what each theme actually looks like. */
   --site-flourish: var(--site-text);
+}
+
+/* Bridge: nav.css (shared appbar) is written against the landing page's
+   theme tokens; map them onto the docs page's --site-* tokens so the exact
+   same appbar CSS drives both pages. */
+:root {
+  --bg: var(--site-bg);
+  --surface: var(--site-surface);
+  --ink: var(--site-text);
+  --ink-dim: var(--site-muted);
+  --ink-faint: var(--site-muted);
+  --border: var(--site-border);
+  --border-strong: var(--site-border);
+  --accent: var(--site-accent);
+  --ui-font: var(--site-chrome-font);
+  --container: 1120px;
 }
 
 /* ---------------------------------------------------------------------
@@ -42,7 +64,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 3rem; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 
 body {
   font-family: var(--site-font-body);
@@ -51,6 +73,7 @@ body {
   color: var(--site-text);
   line-height: var(--site-line-height);
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   transition: background-color .2s ease, color .2s ease;
@@ -64,54 +87,34 @@ a:hover { text-decoration-thickness: 2px; }
  * ------------------------------------------------------------------- */
 
 .sidebar {
-  position: fixed; top: 0; left: 0;
-  width: var(--site-sidebar-w); height: 100vh;
+  position: fixed; top: var(--site-nav-h); left: 0;
+  width: var(--site-sidebar-w); height: calc(100vh - var(--site-nav-h));
   background: var(--site-bg);
   border-right: 1px solid var(--site-border);
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 40;
 }
 
 .sidebar-brand {
   position: relative;
-  padding: 1.75rem 1.5rem 1.25rem;
+  padding: 1.15rem 1.5rem .95rem;
   border-bottom: 1px solid var(--site-border);
   flex-shrink: 0;
 }
-.sidebar-brand a {
+.sidebar-kicker {
   font-family: var(--site-chrome-font);
-  font-size: .82rem;
+  font-size: .62rem;
   font-weight: 700;
-  color: var(--site-text) !important;
-  text-decoration: none !important;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-.sidebar-brand a::before { content: "> "; color: var(--site-flourish); }
-.sidebar-home-link {
-  display: inline-block;
-  margin-bottom: .6rem;
-  font-size: .68rem !important;
-  font-weight: 400 !important;
-  color: var(--site-muted) !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-}
-.sidebar-home-link::before { content: none !important; }
-.sidebar-home-link:hover { color: var(--site-text) !important; }
-.sidebar-tagline {
-  display: block;
-  margin-top: .35rem;
-  font-family: var(--site-chrome-font);
-  font-size: .68rem;
   color: var(--site-muted);
-  letter-spacing: .02em;
+  text-transform: uppercase;
+  letter-spacing: .14em;
 }
 .nav-toggle {
   display: none;
   position: absolute;
-  top: 1.6rem; right: 1.25rem;
+  top: 50%; right: 1.25rem;
+  transform: translateY(-50%);
   background: none;
   border: 1px solid var(--site-border);
   color: var(--site-text);
@@ -122,16 +125,17 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 .sidebar-nav {
-  padding: .75rem 0;
+  padding: .6rem 0;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
 .sidebar-nav a {
+  position: relative;
   display: block;
-  padding: .32rem 1.5rem;
+  padding: .4rem 1.5rem .4rem 1.9rem;
   font-family: var(--site-chrome-font);
-  font-size: .74rem;
+  font-size: .76rem;
   color: var(--site-muted);
   text-decoration: none;
   border-left: 2px solid transparent;
@@ -140,23 +144,23 @@ a:hover { text-decoration-thickness: 2px; }
   text-overflow: ellipsis;
   transition: color .12s, border-color .12s, background-color .12s;
 }
-.sidebar-nav a::before { content: "· "; color: var(--site-border); }
 .sidebar-nav a:hover {
   color: var(--site-text);
+  background: var(--site-surface);
   border-left-color: var(--site-border);
 }
 .sidebar-nav a.is-active {
-  color: var(--site-flourish);
-  border-left-color: var(--site-flourish);
+  color: var(--site-accent);
+  border-left-color: var(--site-accent);
   background: var(--site-surface);
 }
-.sidebar-nav a.is-active::before { color: var(--site-flourish); }
 
 .sidebar-nav::-webkit-scrollbar { width: 3px; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: var(--site-border); }
 
-/* Pinned sidebar footer: command palette trigger + theme switcher.
-   Sits outside the scrolling nav so it is always visible without scrolling. */
+/* Pinned sidebar footer: command palette trigger. Sits outside the
+   scrolling nav so it is always visible without scrolling. Theme switching
+   lives in the shared top appbar (nav.css), so the drawer stays minimal. */
 
 .sidebar-footer {
   flex-shrink: 0;
@@ -176,65 +180,19 @@ a:hover { text-decoration-thickness: 2px; }
   font-size: .7rem;
   letter-spacing: .02em;
   padding: .5rem .65rem;
-  margin-bottom: 1rem;
   cursor: pointer;
+  border-radius: var(--site-radius);
   transition: border-color .12s, color .12s;
 }
-.palette-trigger:hover { color: var(--site-text); border-color: var(--site-flourish); }
+.palette-trigger:hover { color: var(--site-text); border-color: var(--site-accent); }
 .palette-trigger kbd {
   font-family: var(--site-chrome-font);
   font-size: .62rem;
   color: var(--site-muted);
   border: 1px solid var(--site-border);
   padding: .1rem .3rem;
+  border-radius: 2px;
 }
-
-/* Theme switcher */
-
-.theme-switcher-label {
-  display: block;
-  font-family: var(--site-chrome-font);
-  font-size: .62rem;
-  color: var(--site-muted);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-bottom: .6rem;
-}
-.theme-swatches {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: .4rem;
-}
-.theme-swatch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .3rem;
-  background: none;
-  border: 1px solid transparent;
-  cursor: pointer;
-  padding: .3rem .1rem;
-  font-family: var(--site-chrome-font);
-}
-.theme-swatch:hover { border-color: var(--site-border); }
-.theme-swatch[aria-pressed="true"] {
-  border-color: var(--site-text);
-}
-/* Gradient is set inline per swatch (style="background:...") straight
-   from the theme's own bg/accent colors — see swatchGradient() in
-   scripts/docsgen/themevars.go. */
-.swatch-dot {
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,.15);
-}
-.theme-swatch-label {
-  font-size: .58rem;
-  color: var(--site-muted);
-  letter-spacing: .02em;
-  text-transform: uppercase;
-}
-.theme-swatch[aria-pressed="true"] .theme-swatch-label { color: var(--site-text); }
 
 /* ---------------------------------------------------------------------
  * Main
@@ -244,8 +202,11 @@ a:hover { text-decoration-thickness: 2px; }
   margin-left: var(--site-sidebar-w);
   flex: 1;
   min-width: 0;
-  max-width: 1200px;
-  padding: 4rem 4rem 4rem;
+  max-width: 1480px;
+  /* Generous bottom padding so the final sections ("Environment", "Exit
+     Codes") can still scroll up to the appbar instead of getting clamped
+     at the very bottom of a long document. */
+  padding: 3rem 3.5rem calc(6rem + 420px);
 }
 
 /* ---------------------------------------------------------------------
@@ -259,11 +220,11 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .hero-eyebrow {
   font-family: var(--site-chrome-font);
-  font-size: .72rem;
+  font-size: .7rem;
   font-weight: 700;
-  color: var(--site-flourish);
+  color: var(--site-accent);
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .14em;
   margin-bottom: 1rem;
 }
 .hero-ascii {
@@ -278,15 +239,16 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .hero-section .section-title {
   font-family: var(--site-font-heading);
-  font-size: 2.15rem;
-  font-weight: 700;
-  letter-spacing: -.01em;
+  font-size: 2.3rem;
+  font-weight: 600;
+  letter-spacing: -.015em;
+  line-height: 1.15;
   margin-bottom: .4rem;
   color: var(--site-primary);
 }
 .hero-line {
   width: 44px; height: 2px;
-  background: var(--site-flourish);
+  background: var(--site-accent);
   margin: 1.1rem 0 1.4rem;
   opacity: 0;
   animation: heroFadeIn .6s ease-out .1s forwards;
@@ -306,29 +268,32 @@ a:hover { text-decoration-thickness: 2px; }
   font-family: var(--site-chrome-font);
 }
 .hero-meta span {
-  font-size: .68rem;
+  font-size: .66rem;
   font-weight: 500;
   color: var(--site-muted);
   text-transform: uppercase;
   letter-spacing: .05em;
   padding: .25rem .6rem;
   border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
 }
 .download-pdf-btn {
   display: inline-flex;
   flex-direction: column;
   gap: .2rem;
-  border: 1px solid var(--site-flourish);
+  border: 1px solid var(--site-accent);
+  border-radius: var(--site-radius);
   padding: .65rem 1.1rem;
   margin-bottom: 1.75rem;
   text-decoration: none;
-  transition: background-color .12s, color .12s;
+  transition: background-color .12s, color .12s, transform .12s;
 }
+.download-pdf-btn:hover { transform: translateY(-1px); }
 .download-pdf-btn span:first-child {
   font-family: var(--site-font-heading);
   font-size: .92rem;
   font-weight: 700;
-  color: var(--site-flourish);
+  color: var(--site-accent);
 }
 .download-pdf-btn .download-pdf-sub {
   font-family: var(--site-chrome-font);
@@ -337,7 +302,7 @@ a:hover { text-decoration-thickness: 2px; }
   letter-spacing: .02em;
 }
 .download-pdf-btn:hover {
-  background: var(--site-flourish);
+  background: var(--site-accent);
 }
 .download-pdf-btn:hover span:first-child,
 .download-pdf-btn:hover .download-pdf-sub {
@@ -359,6 +324,7 @@ a:hover { text-decoration-thickness: 2px; }
 .install-cmd {
   background: var(--site-surface);
   border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
   padding: .7rem 1rem;
   font-family: var(--site-font-code);
   font-size: .82rem;
@@ -409,15 +375,15 @@ a:hover { text-decoration-thickness: 2px; }
 .main { counter-reset: section; }
 
 .section {
-  margin-bottom: 3.25rem;
+  margin-bottom: 3rem;
   padding-bottom: 2.25rem;
   border-bottom: 1px solid var(--site-border);
 }
 .section:last-of-type { border-bottom: none; }
 .section .section-title {
   font-family: var(--site-font-heading);
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.45rem;
+  font-weight: 600;
   color: var(--site-primary);
   margin-bottom: 1.25rem;
   letter-spacing: -.01em;
@@ -425,21 +391,21 @@ a:hover { text-decoration-thickness: 2px; }
 .section:not(.hero-section) > .section-title::before {
   counter-increment: section;
   content: counter(section, decimal-leading-zero) " — ";
-  color: var(--site-muted);
+  color: var(--site-accent);
   font-family: var(--site-chrome-font);
   font-weight: 400;
-  font-size: 0.85em;
+  font-size: .8em;
 }
 .section h3 {
   font-family: var(--site-font-heading);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   color: var(--site-primary);
   margin: 1.75rem 0 .75rem;
   font-weight: 600;
 }
 .section h4 {
   font-family: var(--site-font-heading);
-  font-size: .92rem;
+  font-size: .95rem;
   color: var(--site-text);
   margin: 1.25rem 0 .5rem;
   font-weight: 600;
@@ -455,15 +421,17 @@ a:hover { text-decoration-thickness: 2px; }
  * ------------------------------------------------------------------- */
 
 .section-content table {
-  width: 100%; border-collapse: collapse;
+  width: 100%; border-collapse: separate; border-spacing: 0;
   margin: 1rem 0 1.5rem;
   font-family: var(--site-font-body);
   font-size: .85rem;
   border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
+  overflow: hidden;
 }
 .section-content table th,
 .section-content table td {
-  padding: .55rem .85rem;
+  padding: .6rem .9rem;
   text-align: left;
   border-bottom: 1px solid var(--site-border);
 }
@@ -483,6 +451,7 @@ a:hover { text-decoration-thickness: 2px; }
 .section-content pre {
   background: var(--site-surface);
   border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
   padding: 1rem 1.15rem;
   overflow-x: auto;
   margin: 1rem 0;
@@ -501,25 +470,21 @@ a:hover { text-decoration-thickness: 2px; }
   color: var(--site-text);
   padding: .1em .4em;
   border: 1px solid var(--site-border);
+  border-radius: 3px;
 }
 .section-content pre code { background: none; border: none; padding: 0; color: var(--site-text); }
 .section-content ul, .section-content ol { padding-left: 1.4rem; margin: .8rem 0; font-family: var(--site-font-body); }
 .section-content li { margin: .35rem 0; }
-.section-content li::marker { color: var(--site-muted); }
+.section-content li::marker { color: var(--site-accent); }
 .section-content blockquote {
-  border-left: 3px solid var(--site-border);
-  padding: .5rem 1.1rem;
+  border-left: 3px solid var(--site-accent);
+  background: var(--site-surface);
+  border-radius: 0 var(--site-radius) var(--site-radius) 0;
+  padding: .65rem 1.1rem;
   margin: 1.1rem 0;
   color: var(--site-muted);
   font-family: var(--site-font-body);
   font-style: italic;
-}
-/* editorial's real theme CSS is the one builtin theme that gives
-   blockquotes an accent-colored border instead of the shared neutral
-   one — mirrored here instead of applying it to every theme. */
-[data-site-theme="editorial"] .section-content blockquote {
-  border-left: 4px solid var(--site-accent);
-  color: var(--site-text);
 }
 .section-content hr { border: none; border-top: 1px solid var(--site-border); margin: 2rem 0; }
 .section-content img { max-width: 100%; }
@@ -541,7 +506,6 @@ a:hover { text-decoration-thickness: 2px; }
   font-family: var(--site-chrome-font);
   font-size: .7rem;
   letter-spacing: .02em;
-  text-transform: uppercase;
 }
 .footer a { font-weight: 500; color: var(--site-muted); text-decoration-color: var(--site-border); }
 .footer a:hover { color: var(--site-accent); text-decoration-color: var(--site-accent); }
@@ -568,6 +532,7 @@ a:hover { text-decoration-thickness: 2px; }
   max-height: 60vh;
   background: var(--site-bg);
   border: 1px solid var(--site-border);
+  border-radius: var(--site-radius);
   box-shadow: 0 24px 48px rgba(0, 0, 0, .35);
   display: flex;
   flex-direction: column;
@@ -581,7 +546,7 @@ a:hover { text-decoration-thickness: 2px; }
   border-bottom: 1px solid var(--site-border);
   flex-shrink: 0;
 }
-.command-palette-prompt { color: var(--site-flourish); font-size: .95rem; }
+.command-palette-prompt { color: var(--site-accent); font-size: .95rem; }
 .command-palette-input {
   flex: 1;
   border: none;
@@ -597,6 +562,7 @@ a:hover { text-decoration-thickness: 2px; }
   color: var(--site-muted);
   border: 1px solid var(--site-border);
   padding: .1rem .3rem;
+  border-radius: 2px;
 }
 .command-palette-results {
   list-style: none;
@@ -614,10 +580,10 @@ a:hover { text-decoration-thickness: 2px; }
 .command-palette-results li a::before { content: "\203A "; color: var(--site-border); }
 .command-palette-results li.is-selected a {
   background: var(--site-surface);
-  border-left-color: var(--site-flourish);
-  color: var(--site-flourish);
+  border-left-color: var(--site-accent);
+  color: var(--site-accent);
 }
-.command-palette-results li.is-selected a::before { color: var(--site-flourish); }
+.command-palette-results li.is-selected a::before { color: var(--site-accent); }
 .command-palette-empty {
   padding: 1.25rem 1rem;
   font-size: .8rem;
@@ -659,17 +625,21 @@ a:hover { text-decoration-thickness: 2px; }
  * Responsive
  * ------------------------------------------------------------------- */
 
+@media (max-width: 1100px) {
+  .main { padding: 2.5rem 2rem calc(3rem + 420px); }
+}
+
 @media (max-width: 900px) {
   body { flex-direction: column; }
   .sidebar {
-    position: sticky; top: 0; width: 100%; height: auto;
+    position: sticky; top: var(--site-nav-h); width: 100%; height: auto;
     border-right: none; border-bottom: 1px solid var(--site-border);
   }
   .sidebar-brand {
-    padding: 1rem 3.5rem 1rem 1.25rem;
+    padding: .8rem 3.5rem .8rem 1.5rem;
     border-bottom: none;
   }
-  .nav-toggle { display: block; top: 50%; transform: translateY(-50%); }
+  .nav-toggle { display: block; }
   .sidebar-nav {
     display: none;
     position: absolute;
@@ -682,12 +652,10 @@ a:hover { text-decoration-thickness: 2px; }
   .sidebar-nav.is-open { display: block; }
   .sidebar-footer {
     border-top: 1px solid var(--site-border);
-    padding: .85rem 1.25rem;
+    padding: .85rem 1.5rem;
   }
-  .theme-swatches { grid-template-columns: repeat(auto-fit, minmax(24px, 1fr)); gap: .3rem; }
-  .theme-swatch-label { display: none; }
-  .main { margin-left: 0; padding: 2rem 1.5rem; }
-  .hero-section .section-title { font-size: 1.6rem; }
+  .main { margin-left: 0; padding: 2rem 1.5rem calc(3rem + 420px); }
+  .hero-section .section-title { font-size: 1.7rem; }
   [data-site-theme="modern"] .hero-section,
   [data-site-theme="editorial"] .hero-section { margin-left: 0; }
   .command-palette { padding-top: 15vh; }

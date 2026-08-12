@@ -1,0 +1,137 @@
+/* ============================================================
+   Shared sticky top appbar — used by BOTH the landing page
+   (landing.css) and the docs page (site.css). Token names are
+   the landing's (--bg/--ink/--surface/--border/--accent/--ui-font);
+   site.css maps them to --site-* for the docs page.
+   ============================================================ */
+header.nav{
+  position:sticky;top:0;z-index:80;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  transition:background .35s ease, border-color .35s ease;
+}
+.nav-inner{
+  max-width:var(--container);margin:0 auto;padding:18px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;
+}
+.brand{
+  display:flex;align-items:baseline;gap:2px;
+  font-family:var(--ui-font);
+  font-weight:700;font-size:15px;letter-spacing:-.01em;
+  white-space:nowrap;
+}
+.brand .dim{color:var(--ink-faint);font-weight:400}
+.brand .brand-suffix{color:var(--accent);font-weight:400;margin-left:2px}
+nav.links{display:flex;align-items:center;gap:24px;font-family:var(--ui-font);font-size:13px}
+nav.links a{color:var(--ink-dim);transition:color .15s ease;white-space:nowrap}
+nav.links a:hover{color:var(--ink)}
+nav.links a.is-active{color:var(--ink);font-weight:700}
+.nav-cta{display:flex;align-items:center;gap:14px}
+.gh-stars{
+  display:flex;align-items:center;gap:7px;
+  border:1px solid var(--border-strong);
+  padding:6px 12px;
+  font-family:var(--ui-font);font-size:12px;
+  color:var(--ink-dim);
+  transition:border-color .15s ease, color .15s ease;
+}
+.gh-stars:hover{border-color:var(--accent);color:var(--ink)}
+.gh-stars svg{width:13px;height:13px;fill:currentColor}
+
+/* ---------- nav mobile menu button ---------- */
+.menu-btn{
+  display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  width:36px;height:36px;flex:0 0 auto;
+  background:transparent;border:1px solid var(--border-strong);
+  cursor:pointer;padding:0;
+  transition:border-color .15s ease;
+}
+.menu-btn:hover{border-color:var(--accent)}
+.menu-btn .menu-bar{
+  width:16px;height:2px;background:var(--ink-dim);
+  transition:transform .18s ease, opacity .18s ease, background .18s ease;
+}
+.menu-btn:hover .menu-bar{background:var(--ink)}
+.menu-open .menu-btn .menu-bar:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.menu-open .menu-btn .menu-bar:nth-child(2){opacity:0}
+.menu-open .menu-btn .menu-bar:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+/* Inline links only when the full bar fits; below that a hamburger
+   expands them into a full-width panel under the sticky header. */
+@media (max-width:1100px){
+  nav.links{
+    display:none;
+    position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:0;
+    background:var(--surface);
+    border-bottom:1px solid var(--border-strong);
+    box-shadow:0 20px 44px -22px rgba(0,0,0,.4);
+    padding:10px 0 12px;
+  }
+  header.nav.menu-open nav.links{display:flex}
+  nav.links a{
+    padding:13px 28px;
+    border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  nav.links a:hover{background:var(--bg)}
+  nav.links a:last-child{border-bottom:none}
+  .menu-btn{display:flex}
+}
+
+@media (max-width:560px){
+  .nav-inner{padding:14px 16px}
+  .gh-stars span{display:none}
+  .gh-stars{padding:7px 9px}
+}
+
+/* ---------- nav theme dropdown ---------- */
+.theme-dropdown{position:relative}
+.theme-dropdown-btn{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border-strong);
+  background:transparent;
+  padding:6px 10px;
+  font-family:var(--ui-font);font-size:12px;color:var(--ink-dim);
+  cursor:pointer;
+  transition:border-color .15s ease, color .15s ease;
+}
+.theme-dropdown-btn:hover{border-color:var(--accent);color:var(--ink)}
+.theme-dropdown-btn b{color:var(--ink);font-weight:700}
+.theme-dropdown-btn .swatches{display:flex;align-items:center;gap:3px;margin:0}
+.theme-dropdown-btn .swatch{width:8px;height:8px;border:1px solid rgba(0,0,0,.2)}
+.theme-dropdown-btn .chevron{width:12px;height:12px;transition:transform .15s ease}
+.theme-dropdown.open .chevron{transform:rotate(180deg)}
+.theme-dropdown-panel{
+  display:none;
+  position:absolute;top:calc(100% + 8px);right:0;
+  width:280px;max-height:360px;overflow-y:auto;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  box-shadow:0 12px 32px -12px rgba(0,0,0,.4);
+  z-index:60;
+}
+.theme-dropdown.open .theme-dropdown-panel{display:block}
+.theme-option{
+  display:flex;align-items:center;gap:10px;width:100%;
+  background:none;border:none;border-bottom:1px solid var(--border);
+  padding:9px 14px;
+  font-family:var(--ui-font);font-size:12px;color:var(--ink-dim);
+  cursor:pointer;text-align:left;
+  transition:background .12s ease;
+}
+.theme-option:last-child{border-bottom:none}
+.theme-option:hover{background:var(--bg)}
+.theme-option.active{color:var(--ink);font-weight:700}
+.theme-option.active::after{content:"\2713";margin-left:auto;color:var(--accent)}
+.theme-option .swatches{display:flex;align-items:center;gap:4px;margin:0}
+.theme-option .swatch{width:10px;height:10px;border:1px solid rgba(0,0,0,.2)}
+
+@media (max-width:560px){
+  .theme-dropdown-btn span:not(.swatches){display:none}
+  .theme-dropdown-panel{
+    position:fixed;top:64px;left:12px;right:12px;width:auto;
+  }
+}

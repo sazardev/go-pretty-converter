@@ -11,6 +11,15 @@
       var isActive = buttons[i].getAttribute("data-theme") === name;
       buttons[i].setAttribute("aria-pressed", isActive ? "true" : "false");
     }
+    // Sync the shared top-appbar theme dropdown (nav.css markup).
+    document.querySelectorAll(".theme-option").forEach(function (el) {
+      el.classList.toggle("active", el.dataset.name === name);
+    });
+    var navLabel = document.getElementById("navThemeLabel");
+    if (navLabel) navLabel.textContent = name;
+    var navSwatches = document.getElementById("navThemeSwatches");
+    var pickedOption = document.querySelector('.theme-option[data-name="' + name + '"] .swatches');
+    if (navSwatches && pickedOption) navSwatches.innerHTML = pickedOption.innerHTML;
     updateDownloadLink(name);
   }
 
@@ -36,7 +45,7 @@
     } catch (e) {
       /* localStorage unavailable (privacy mode) — fall back to default */
     }
-    applyTheme(saved || root.getAttribute("data-site-theme") || "classic");
+    applyTheme(saved || root.getAttribute("data-site-theme") || "default");
 
     var buttons = document.querySelectorAll(".theme-swatch");
     for (var i = 0; i < buttons.length; i++) {
@@ -52,31 +61,73 @@
     }
   }
 
+  // Distance from the viewport top the section heading should rest at after
+  // a drawer jump — the sticky appbar (71px) plus a little breathing room.
+  var NAV_OFFSET = 84;
+
+  function setActiveLink(id) {
+    var links = document.querySelectorAll(".sidebar-nav a");
+    for (var i = 0; i < links.length; i++) {
+      links[i].classList.toggle("is-active", links[i].getAttribute("href") === "#" + id);
+    }
+  }
+
+  // Scroll-spy: highlights the drawer item for the section whose top is
+  // closest to the line just under the sticky appbar. A "nearest to line"
+  // approach (rather than an intersection band) also works for sections
+  // near the bottom of a very long page, which can never scroll high enough
+  // to enter a fixed band.
   function initScrollSpy() {
     var links = document.querySelectorAll(".sidebar-nav a");
-    var linkByID = {};
+    var sections = [];
     links.forEach(function (link) {
-      linkByID[link.getAttribute("href").slice(1)] = link;
+      var el = document.getElementById(link.getAttribute("href").slice(1));
+      if (el) sections.push(el);
     });
+    if (sections.length === 0) return;
 
-    var sections = document.querySelectorAll(".section[id]");
-    if (!("IntersectionObserver" in window) || sections.length === 0) return;
-
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          var link = linkByID[entry.target.id];
-          if (!link) return;
-          if (entry.isIntersecting) {
-            links.forEach(function (l) { l.classList.remove("is-active"); });
-            link.classList.add("is-active");
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        var best = sections[0];
+        var bestDist = Infinity;
+        for (var i = 0; i < sections.length; i++) {
+          var dist = Math.abs(sections[i].getBoundingClientRect().top - NAV_OFFSET);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = sections[i];
           }
-        });
-      },
-      { rootMargin: "-10% 0px -75% 0px", threshold: 0 }
-    );
+        }
+        setActiveLink(best.id);
+        ticking = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+  }
 
-    sections.forEach(function (section) { observer.observe(section); });
+  // Drawer navigation: replaces the native anchor jump with a precise,
+  // clamped scroll to the section heading (offset below the appbar) and
+  // marks the tapped item active immediately — the observer-based spy can
+  // lag or pick a different item on long pages, which made jumps feel like
+  // they landed "somewhere else".
+  function initSectionNav() {
+    var nav = document.querySelector(".sidebar-nav");
+    if (!nav) return;
+    nav.addEventListener("click", function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      var target = document.getElementById(link.getAttribute("href").slice(1));
+      if (!target) return;
+      e.preventDefault();
+      setActiveLink(target.id);
+      if (history.replaceState) history.replaceState(null, "", "#" + target.id);
+      var top = target.getBoundingClientRect().top + window.pageYOffset - NAV_OFFSET;
+      window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+    });
   }
 
   function isApplePlatform() {
@@ -108,6 +159,92 @@
 
     nav.querySelectorAll("a").forEach(function (link) {
       link.addEventListener("click", close);
+    });
+  }
+
+  // ---------- shared top-appbar theme dropdown (nav.css markup) ----------
+  function initNavThemeDropdown() {
+    var dropdown = document.querySelector(".theme-dropdown");
+    var btn = document.getElementById("themeDropdownBtn");
+    if (!dropdown || !btn) return;
+
+    function close() {
+      dropdown.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+    function toggle() {
+      var willOpen = !dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", willOpen);
+      btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (willOpen) {
+        var menuBtn = document.getElementById("menuBtn");
+        if (menuBtn) {
+          menuBtn.setAttribute("aria-expanded", "false");
+          var header = menuBtn.closest("header");
+          if (header) header.classList.remove("menu-open");
+        }
+      }
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggle();
+    });
+    dropdown.querySelectorAll(".theme-option").forEach(function (opt) {
+      opt.addEventListener("click", function () {
+        var name = opt.dataset.name;
+        applyTheme(name);
+        try { localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
+        close();
+      });
+    });
+    document.addEventListener("click", function (e) {
+      if (!dropdown.contains(e.target)) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+  }
+
+  // ---------- shared mobile hamburger menu (nav.css markup) ----------
+  function initNavMenu() {
+    var header = document.querySelector("header.nav");
+    var btn = document.getElementById("menuBtn");
+    var links = document.getElementById("navLinks");
+    if (!header || !btn || !links) return;
+
+    function close() {
+      header.classList.remove("menu-open");
+      btn.setAttribute("aria-expanded", "false");
+    }
+    function open() {
+      header.classList.add("menu-open");
+      btn.setAttribute("aria-expanded", "true");
+      var dropdown = document.querySelector(".theme-dropdown");
+      if (dropdown) dropdown.classList.remove("open");
+      var ddBtn = document.getElementById("themeDropdownBtn");
+      if (ddBtn) ddBtn.setAttribute("aria-expanded", "false");
+    }
+    function toggle() {
+      var willOpen = !header.classList.contains("menu-open");
+      if (willOpen) open(); else close();
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggle();
+    });
+    links.addEventListener("click", function (e) {
+      if (e.target.closest("a")) close();
+    });
+    document.addEventListener("click", function (e) {
+      if (!header.contains(e.target)) close();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 1100) close();
     });
   }
 
@@ -226,8 +363,11 @@
   document.addEventListener("DOMContentLoaded", function () {
     initThemeSwitcher();
     initScrollSpy();
+    initSectionNav();
     initNavToggle();
     initCommandPalette();
     initShortcutHint();
+    initNavThemeDropdown();
+    initNavMenu();
   });
 })();

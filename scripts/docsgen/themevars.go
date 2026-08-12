@@ -56,10 +56,15 @@ func themeCSSBlock(t theme.Theme) string {
 	vars := extractThemeVars(t.CSS)
 
 	var b strings.Builder
-	// classic is the site's default (matches the server-rendered
-	// data-site-theme="classic" on <html>), so it also doubles as the :root
-	// fallback in case that attribute is ever missing.
-	if t.Name == theme.NameClassic {
+	// default is the site's theme (matches the server-rendered
+	// data-site-theme="default" on <html>) AND the first theme in
+	// theme.List(), so its combined ":root," selector is safe: the :root
+	// fallback only matters if the attribute is ever missing, and every
+	// other theme's [data-site-theme] block comes later in source order
+	// and wins when selected. Earlier themes used classic here, whose block
+	// sits mid-list — its unconditional :root rule then overrode the
+	// default/minimal/modern palettes that precede it.
+	if t.Name == theme.NameDefault {
 		b.WriteString(":root,\n")
 	}
 	fmt.Fprintf(&b, "[data-site-theme=%q] {\n", t.Name)
@@ -93,29 +98,4 @@ func generatedThemeCSS() string {
 		b.WriteString(themeCSSBlock(t))
 	}
 	return b.String()
-}
-
-// swatchGradient returns the two-tone "bg / accent" preview used by the
-// theme switcher's swatch dots, read straight from the theme's own colors.
-func swatchGradient(t theme.Theme) string {
-	vars := extractThemeVars(t.CSS)
-	bg := vars[varBg]
-	accent := vars[varAccent]
-	if bg == "" {
-		bg = "#ffffff"
-	}
-	if accent == "" {
-		accent = "#888888"
-	}
-	return fmt.Sprintf("linear-gradient(135deg, %s 50%%, %s 50%%)", bg, accent)
-}
-
-// displayName turns a theme's lowercase registry key ("corporate") into a
-// human-friendly label ("Corporate") without a hand-maintained lookup
-// table — every builtin theme name is a single plain word.
-func displayName(id string) string {
-	if id == "" {
-		return id
-	}
-	return strings.ToUpper(id[:1]) + id[1:]
 }
