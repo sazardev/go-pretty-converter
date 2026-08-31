@@ -16,6 +16,7 @@ const (
 	defaultTheme      = "default"
 	outputDirWritable = "Output directory writable"
 	coverImageExists  = "Cover image exists"
+	unknownFileSize   = "unknown"
 )
 
 func loadConfig(cmd *cobra.Command) (*config.Config, error) {
@@ -162,13 +163,14 @@ func loadConfig(cmd *cobra.Command) (*config.Config, error) {
 	return cfg, nil
 }
 
-func buildOpts(cfg *config.Config, chromeExecPath string) []prettypdf.Option {
+func buildOpts(cfg *config.Config, chromeExecPath, calibreExecPath string) []prettypdf.Option {
 	opts := []prettypdf.Option{
 		prettypdf.WithVerbose(verbose),
 		prettypdf.WithFullConfig(cfg),
 		prettypdf.WithNetworkAccess(cfg.ThemeOptions.AllowNetworkFonts),
 		prettypdf.WithValidator(validatorFromConfig(cfg)),
 		prettypdf.WithChromeExecPath(chromeExecPath),
+		prettypdf.WithCalibreExecPath(calibreExecPath),
 	}
 	if noOutline {
 		opts = append(opts, prettypdf.WithGenerateDocumentOutline(false))

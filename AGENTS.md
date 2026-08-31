@@ -2,7 +2,8 @@
 
 ## Overview
 
-`go-pretty-pdf` transforms a directory of MDX files into a print-ready PDF (and EPUB) via headless Chrome.
+`go-pretty-pdf` transforms a directory of MDX files into a print-ready PDF, EPUB, and/or Kindle
+(MOBI/AZW3) ebook via headless Chrome (Kindle via Calibre's `ebook-convert`, invoked separately).
 It is both a Go library (`github.com/sazardev/go-pretty-pdf`) and a CLI tool.
 
 ## Commands
@@ -10,7 +11,9 @@ It is both a Go library (`github.com/sazardev/go-pretty-pdf`) and a CLI tool.
 ```bash
 go run ./cmd/pretty-pdf build --source ./docs --out out.pdf   # build a PDF
 go run ./cmd/pretty-pdf check --source ./docs                  # validate only (the command is `check`, not `validate`)
+go run ./cmd/pretty-pdf analyze --source ./docs                # static cross-format rendering-quality analysis, no Chrome/Calibre
 go run ./cmd/pretty-pdf epub --source ./docs --out out.epub    # EPUB build, no Chrome required
+go run ./cmd/pretty-pdf kindle --source ./docs --out out.mobi  # Kindle build, needs Calibre's ebook-convert on PATH
 go run ./cmd/pretty-pdf theme list                             # theme command family: list | show | new | add
 go test ./...
 go test ./mdx/... -run TestParserParseFile -v
@@ -26,13 +29,15 @@ tidy → lint → test (-race, 3 OS matrix) → vet → vulncheck → build.
 ## Architecture
 
 ```
-cmd/pretty-pdf/    CLI entrypoint (cobra): build, check, init, watch, serve, epub, theme, version, completion
+cmd/pretty-pdf/    CLI entrypoint (cobra): build, check, analyze, init, watch, serve, epub, kindle, theme, version, completion
 pdf.go             Root package — public API: New(), Build(), ParseDir(), ComposeHTML(), Render(), Validate(), LastAudit()
 mdx/               MDX parser (goldmark-based), custom component transpiler, validator interface
+analyze/           Static cross-format (PDF/EPUB/Kindle) rendering-quality analysis over parsed docs, no Chrome/Calibre
 compose/           HTML composition: TOC, go:embed'd template.html + print.css
 render/            Chrome headless PDF rendering via chromedp + automatic quality audit
 theme/             17 builtin themes over a shared base.css, custom .theme.yml themes, section toggles
 epub/              EPUB builder (no Chrome), shared with render path via theme
+kindle/            Kindle (MOBI/AZW3) builder: EPUB via epub/, converted through Calibre's ebook-convert
 chromemgr/         Chrome binary resolution + auto-download (chrome-headless-shell)
 config/            go-pretty-pdf.yml parsing, units (mm/in/pt) handling
 ```

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sazardev/go-pretty-pdf/analyze"
 	"github.com/sazardev/go-pretty-pdf/mdx"
 )
 
@@ -79,6 +80,50 @@ func PrintValidationSummary(errs []mdx.ValidationError, warnings int, docFiles [
 			KeyValue("Passed", SuccessStyle.Render(fmt.Sprintf("%d", passed)))+"\n"+
 			KeyValue("Warnings", WarningStyle.Render(fmt.Sprintf("%d", warned)))+"\n"+
 			KeyValue("Errors", ErrorStyle.Render(fmt.Sprintf("%d", errored))),
+	))
+}
+
+// PrintAnalysisSummary prints analyze.Issue findings grouped by document
+// (in docFiles' order — a clean file with no findings still gets a ✓ line),
+// each issue prefixed by its severity symbol and "[check-name]", followed
+// by a Panel totaling files/errors/warnings/improvements.
+func PrintAnalysisSummary(issues []analyze.Issue, docFiles []string) {
+	byFile := make(map[string][]analyze.Issue, len(docFiles))
+	for _, iss := range issues {
+		byFile[iss.File] = append(byFile[iss.File], iss)
+	}
+
+	errors, warnings, infos := 0, 0, 0
+
+	fmt.Println()
+	for _, f := range docFiles {
+		fileIssues := byFile[f]
+		if len(fileIssues) == 0 {
+			fmt.Printf("  %s %s\n", SuccessSymbol, FilePathStyle.Render(f))
+			continue
+		}
+		fmt.Printf("  %s\n", FilePathStyle.Render(f))
+		for _, iss := range fileIssues {
+			switch iss.Severity {
+			case analyze.SeverityError:
+				errors++
+				fmt.Printf("    %s [%s] %s\n", ErrorSymbol, iss.Check, ErrorStyle.Render(iss.Message))
+			case analyze.SeverityWarning:
+				warnings++
+				fmt.Printf("    %s [%s] %s\n", WarningSymbol, iss.Check, WarningStyle.Render(iss.Message))
+			default:
+				infos++
+				fmt.Printf("    %s [%s] %s\n", InfoSymbol, iss.Check, iss.Message)
+			}
+		}
+	}
+
+	fmt.Println()
+	fmt.Println(Panel("Analysis Results",
+		KeyValue("Files", NumberStyle.Render(fmt.Sprintf("%d", len(docFiles))))+"\n"+
+			KeyValue("Errors", ErrorStyle.Render(fmt.Sprintf("%d", errors)))+"\n"+
+			KeyValue("Warnings", WarningStyle.Render(fmt.Sprintf("%d", warnings)))+"\n"+
+			KeyValue("Improvements", InfoStyle.Render(fmt.Sprintf("%d", infos))),
 	))
 }
 

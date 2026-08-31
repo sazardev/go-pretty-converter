@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Kindle output** (`pretty-pdf kindle`, or `build --format kindle`/`pdf,epub,kindle`): builds the same EPUB the `epub` command produces, then converts it to a Kindle-ready MOBI (default) or AZW3 file via Calibre's `ebook-convert` — Amazon retired its own KindleGen tool in 2022, so Calibre is now the standard converter. Calibre is not bundled; install it separately and put `ebook-convert` on `PATH`, or pass `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. New Go API: `prettypdf.FormatKindle`, `WithCalibreExecPath`, `PDF.RenderKindle`/`NeedsCalibre`, and the standalone `kindle` package (`kindle.Write`, `kindle.ResolveCalibre`).
+- **`pretty-pdf analyze`**: a static content analyzer, no Chrome or Calibre required, that flags patterns which render poorly (or break outright) across PDF, EPUB, and Kindle — distinct from `check`'s frontmatter/structure validation. Reports three severities: **errors** (`broken-internal-anchor`, `duplicate-element-id`, `image-file-not-found`), **warnings** (`heading-level-skip`, `multiple-h1`, `wide-table`, `image-missing-alt`, `long-code-line`, `deep-list-nesting`, `long-chapter-no-subheadings`), and **improvements** (`no-headings`, `image-external-url`, `image-oversized`, `no-tags`). Supports `--strict` (fail on warnings too), `--json`, and threshold flags (`--max-table-columns`, `--max-code-line-length`, `--max-list-depth`, `--long-chapter-words`). New Go API: the `analyze` package (`analyze.Analyze`, `analyze.Issue`, `analyze.Severity`, `analyze.Options`).
+
 ## [0.11.0] - 2026-08-12
 
 ### Added

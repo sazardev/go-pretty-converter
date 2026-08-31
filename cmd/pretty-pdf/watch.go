@@ -111,7 +111,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 
 		startTime := time.Now()
 
-		opts := buildOpts(cfg, chromeExecPath)
+		opts := buildOpts(cfg, chromeExecPath, "")
 		pdf, err := prettypdf.New(opts...)
 
 		if err != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/sazardev/go-pretty-pdf/compose"
 	"github.com/sazardev/go-pretty-pdf/config"
 	"github.com/sazardev/go-pretty-pdf/epub"
+	"github.com/sazardev/go-pretty-pdf/kindle"
 	"github.com/sazardev/go-pretty-pdf/mdx"
 	"github.com/sazardev/go-pretty-pdf/render"
 	"github.com/sazardev/go-pretty-pdf/theme"
@@ -21,8 +22,9 @@ import (
 type OutputFormat string
 
 const (
-	FormatPDF  OutputFormat = "pdf"
-	FormatEPUB OutputFormat = "epub"
+	FormatPDF    OutputFormat = "pdf"
+	FormatEPUB   OutputFormat = "epub"
+	FormatKindle OutputFormat = "kindle"
 )
 
 func ParseFormats(s string) ([]OutputFormat, error) {
@@ -35,9 +37,9 @@ func ParseFormats(s string) ([]OutputFormat, error) {
 			continue
 		}
 		switch f {
-		case FormatPDF, FormatEPUB:
+		case FormatPDF, FormatEPUB, FormatKindle:
 		default:
-			return nil, fmt.Errorf("unsupported format %q (supported: pdf, epub)", f)
+			return nil, fmt.Errorf("unsupported format %q (supported: pdf, epub, kindle)", f)
 		}
 		if !seen[f] {
 			seen[f] = true
@@ -58,6 +60,7 @@ type PDF struct {
 	composeOpts     compose.Options
 	renderOpts      render.Options
 	epubOpts        epub.Options
+	calibrePath     string
 	validator       mdx.Validator
 	verbose         bool
 	pendingWarnings []string
@@ -110,6 +113,16 @@ func WithFormats(formats ...OutputFormat) Option {
 func WithEpubLanguage(lang string) Option {
 	return func(p *PDF) {
 		p.epubOpts.Language = lang
+	}
+}
+
+// WithCalibreExecPath pins the FormatKindle pipeline to a specific
+// Calibre ebook-convert executable instead of resolving one from PATH.
+// Leave unset (or pass "") to resolve ebook-convert from PATH at build
+// time — see the kindle package for the full resolution order.
+func WithCalibreExecPath(path string) Option {
+	return func(p *PDF) {
+		p.calibrePath = path
 	}
 }
 
@@ -652,6 +665,12 @@ func (p *PDF) Build(ctx context.Context) error {
 			if err := epub.Write(docs, p.epubOpts, epubPath); err != nil {
 				return fmt.Errorf("writing EPUB: %w", err)
 			}
+		case FormatKindle:
+			kindlePath := p.kindleOutputPath()
+			p.logVerbose(fmt.Sprintf("Converting to Kindle format at %s...", kindlePath))
+			if err := p.RenderKindle(ctx, docs, kindlePath); err != nil {
+				return fmt.Errorf("writing Kindle file: %w", err)
+			}
 		}
 	}
 
@@ -669,6 +688,21 @@ func (p *PDF) epubOutputPath() string {
 	return p.outputFile + ".epub"
 }
 
+// kindleOutputPath mirrors epubOutputPath: a .pdf/.epub p.outputFile maps
+// to the .mobi variant, an already-Kindle extension (.mobi/.azw3) is kept
+// as-is, and anything else gets ".mobi" appended.
+func (p *PDF) kindleOutputPath() string {
+	ext := strings.ToLower(filepath.Ext(p.outputFile))
+	switch ext {
+	case ".pdf", ".epub":
+		return strings.TrimSuffix(p.outputFile, ext) + ".mobi"
+	case ".mobi", ".azw3":
+		return p.outputFile
+	default:
+		return p.outputFile + ".mobi"
+	}
+}
+
 func (p *PDF) Formats() []OutputFormat {
 	return p.formats
 }
@@ -682,8 +716,28 @@ func (p *PDF) NeedsChrome() bool {
 	return false
 }
 
+// NeedsCalibre reports whether FormatKindle is among the configured
+// formats, meaning Build will need Calibre's ebook-convert on PATH (or
+// pinned via WithCalibreExecPath).
+func (p *PDF) NeedsCalibre() bool {
+	for _, f := range p.formats {
+		if f == FormatKindle {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *PDF) RenderEpub(docs []*mdx.Document, outputPath string) error {
 	return epub.Write(docs, p.epubOpts, outputPath)
+}
+
+// RenderKindle converts docs into a Kindle-ready file at outputPath,
+// reusing the same EPUB options (theme, metadata, cover) as RenderEpub
+// but piping the result through Calibre's ebook-convert. See the kindle
+// package for the conversion pipeline and Calibre resolution order.
+func (p *PDF) RenderKindle(ctx context.Context, docs []*mdx.Document, outputPath string) error {
+	return kindle.Write(ctx, docs, kindle.Options{EPUB: p.epubOpts, CalibrePath: p.calibrePath}, outputPath)
 }
 
 func (p *PDF) Validate(ctx context.Context) ([]mdx.ValidationError, error) {

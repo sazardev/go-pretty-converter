@@ -2,7 +2,7 @@
 
 ## Overview
 
-`pretty-pdf` transforms a directory of MDX files into a print-ready PDF and/or a reflowable EPUB 3 file. Documents are sorted by their `[X.Y.Z]` frontmatter ID, not by filename.
+`pretty-pdf` transforms a directory of MDX files into a print-ready PDF, a reflowable EPUB 3 file, and/or a Kindle-ready MOBI/AZW3 file. Documents are sorted by their `[X.Y.Z]` frontmatter ID, not by filename.
 
 GitHub: <https://github.com/sazardev/go-pretty-pdf>
 
@@ -12,6 +12,7 @@ GitHub: <https://github.com/sazardev/go-pretty-pdf>
   - Already have Chrome/Chromium installed? It's detected and used automatically — nothing is downloaded.
   - Want to pin a specific binary instead (skip detection/download entirely)? Pass `--chrome-path /path/to/chrome` or set the `PRETTY_PDF_CHROME_PATH` environment variable.
   - Supported for auto-download: linux/amd64, darwin/amd64, darwin/arm64, windows/amd64. On linux/arm64 (no official build exists yet), install Chromium via your system's package manager and use `--chrome-path`.
+- **Calibre** — required only for Kindle output (`--format kindle`, or the `kindle` command). `pretty-pdf` does not bundle or auto-download Calibre; install it from <https://calibre-ebook.com/download> and make sure `ebook-convert` is on your `PATH`, or point to it explicitly with `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. PDF and EPUB output never need Calibre.
 - Go 1.26+ (if building from source).
 
 ## Usage
@@ -27,6 +28,7 @@ pretty-pdf [command] [flags]
 | `--config` | `""` | Path to config file |
 | `--source` | `"book"` | Source MDX directory |
 | `--chrome-path` | `$PRETTY_PDF_CHROME_PATH` | Path to a Chrome/Chromium executable (skips auto-detection/download) |
+| `--calibre-path` | `$PRETTY_PDF_CALIBRE_PATH` | Path to Calibre's `ebook-convert` executable (skips PATH auto-detection) — used by `--format kindle` and the `kindle` command |
 | `--verbose` | `false` | Verbose output |
 | `--no-color` | `false` | Disable colored output |
 | `--quiet` | `false` | Suppress non-error output |
@@ -36,7 +38,7 @@ pretty-pdf [command] [flags]
 
 ### `build`
 
-Parse MDX files, validate them, compose HTML, and render to PDF and/or EPUB.
+Parse MDX files, validate them, compose HTML, and render to PDF, EPUB, and/or Kindle (MOBI/AZW3).
 
 ```
 pretty-pdf build [flags]
@@ -44,7 +46,7 @@ pretty-pdf build [flags]
 
 | Flag | Default | Description |
 |---|---|---|
-| `--format` | `"pdf"` | Output formats: `pdf`, `epub`, or `pdf,epub` |
+| `--format` | `"pdf"` | Output formats, comma-separated: `pdf`, `epub`, `kindle` (e.g. `pdf,epub,kindle`) |
 | `--out` | `"out.pdf"` | Output path (extension determines single format; base name for multi-format) |
 | `--title` | `""` | Book title |
 | `--subtitle` | `""` | Book subtitle |
@@ -54,7 +56,7 @@ pretty-pdf build [flags]
 | `--template` | `""` | Custom HTML template file path (overrides the theme's HTML) |
 | `--cover-image` | `""` | Custom cover image (`.png`/`.jpg`/`.jpeg`/`.svg`/`.webp`); the cover page is sized to the image's own dimensions, replacing the text cover |
 | `--timeout` | `""` | Render timeout (e.g. `30s`, `1m`) |
-| `--language` | `"en"` | EPUB language (BCP-47 tag, e.g. `en`, `es`) |
+| `--language` | `"en"` | EPUB/Kindle language (BCP-47 tag, e.g. `en`, `es`) |
 | `--json` | `false` | Output as JSON |
 | `--no-cover` | `false` | Omit the cover page |
 | `--no-toc` | `false` | Omit the table of contents |
@@ -82,8 +84,9 @@ The `build` command runs through these stages per format:
 3. **PDF compose** — Assemble HTML with TOC, cover page, and embedded CSS/template (PDF only)
 4. **PDF render** — Generate PDF via headless Chrome, then run an automatic quality audit (PDF only)
 5. **EPUB write** — Package chapters directly into EPUB 3, no Chrome needed (EPUB only)
+6. **Kindle convert** — Build the same EPUB internally, then convert it to MOBI/AZW3 via Calibre's `ebook-convert` (Kindle only)
 
-Chrome is only required when `pdf` is in the format list. An `epub`-only build (`--format epub`) skips Chrome detection entirely.
+Chrome is only required when `pdf` is in the format list; Calibre is only required when `kindle` is. An `epub`/`kindle`-only build skips Chrome detection entirely, and a `pdf`/`epub`-only build skips Calibre detection entirely.
 
 #### PDF Quality Audit
 
@@ -116,6 +119,7 @@ The audit reads the composed HTML before it's handed to the print engine, so it 
 Before the pipeline starts, `build` verifies (per selected formats):
 
 - Chrome/Chromium is available (only when `pdf` is in the format list)
+- Calibre's `ebook-convert` is available (only when `kindle` is in the format list)
 - Source directory exists
 - At least one `.md`/`.mdx`/`.txt` file is present
 - Each output path's directory is writable
@@ -136,6 +140,60 @@ pretty-pdf check [flags]
 | Flag | Default | Description |
 |---|---|---|
 | `--strict` | `false` | Treat content warnings as errors |
+
+---
+
+### `analyze`
+
+Statically analyze parsed MDX content for patterns that render poorly — or
+break outright — across PDF, EPUB, and Kindle output. No Chrome or Calibre
+required: `analyze` works directly on parsed content, before any build.
+
+This is a different layer from `check`: `check` validates frontmatter and
+structure (required fields, id format, duplicate ids, heading *depth*);
+`analyze` looks at content itself — heading *hierarchy*, tables, images,
+code blocks, lists, and chapter length — with an eye specifically on how
+each renders across formats.
+
+```
+pretty-pdf analyze [flags]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--strict` | `false` | Treat warnings as blocking, in addition to errors |
+| `--json` | `false` | Output as JSON |
+| `--max-table-columns` | `6` | Flag tables wider than this many columns |
+| `--max-code-line-length` | `100` | Flag code lines longer than this many characters |
+| `--max-list-depth` | `3` | Flag lists nested deeper than this |
+| `--long-chapter-words` | `3000` | Flag chapters at/above this word count with no subheadings |
+
+Findings are grouped into three severities:
+
+| Severity | Meaning |
+|---|---|
+| **Errors** | Content that will actually break in some format (a dead `#anchor` link, a missing local image file) |
+| **Warnings** | Content that will render, but poorly, in some format (a table too wide for Kindle, a skipped heading level, deep list nesting, an overlong code line) |
+| **Improvements** (info) | Suggestions worth a look, not necessarily wrong (no headings, no tags, an oversized image, a remote image URL that PDF's network lockdown renders blank) |
+
+| Check | Severity | What it flags |
+|---|---|---|
+| `broken-internal-anchor` | error | A link to `#id` where no element in the document has that id |
+| `duplicate-element-id` | error | The same `id` used on more than one element — breaks anchors and TOC/bookmark navigation |
+| `image-file-not-found` | error | A local image reference that doesn't resolve to a file on disk |
+| `heading-level-skip` | warning | A heading jumps more than one level deeper than the previous one (e.g. h1 → h3), breaking the outline PDF bookmarks/EPUB nav/Kindle TOC build from headings |
+| `multiple-h1` | warning | More than one top-level heading in a document — each MDX file becomes one chapter, so this makes for an ambiguous chapter title |
+| `wide-table` | warning | A table with more columns than `--max-table-columns` |
+| `image-missing-alt` | warning | An `<img>` with no (or empty) alt text |
+| `long-code-line` | warning | A code block with a line longer than `--max-code-line-length` |
+| `deep-list-nesting` | warning | A list nested deeper than `--max-list-depth` |
+| `long-chapter-no-subheadings` | warning | A chapter at/above `--long-chapter-words` with no h2+ subheadings, so no in-chapter navigation |
+| `no-headings` | info | A non-empty document with zero headings |
+| `image-external-url` | info | An image referenced by a remote URL — blank in PDF (network access is blocked by default) and often blank offline on e-readers too |
+| `image-oversized` | info | A local raster image wider than useful for print/e-ink, bloating output size |
+| `no-tags` | info | A document with no frontmatter `tags` |
+
+Exit status: `0` unless errors are found; `--strict` also fails on warnings.
 
 ---
 
@@ -177,6 +235,49 @@ image works for both `build` and `epub`. Unlike PDF output — which uses
 through `ResolveForEPUB`, which produces a reflowable stylesheet (relative
 units, no print-only rules, no cover/TOC/page-number sections) that works
 across e-reader devices.
+
+---
+
+### `kindle`
+
+Parse MDX files, validate them, and convert them into a Kindle-ready ebook
+file — no Chrome/Chromium involved, unlike `build`. Internally this builds
+the same EPUB the `epub` command would produce, then converts it with
+Calibre's `ebook-convert` (Amazon retired its own KindleGen tool in 2022;
+Calibre is the standard replacement), so **Calibre must be installed** with
+`ebook-convert` reachable on `PATH` — or pointed to explicitly with
+`--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. See [Requirements](#requirements).
+
+```
+pretty-pdf kindle [flags]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--out` | `"out.mobi"` | Output Kindle ebook path (`.mobi` or `.azw3`) |
+| `--title` | `""` | Book title |
+| `--subtitle` | `""` | Book subtitle |
+| `--author` | `""` | Book author |
+| `--theme` | `"default"` | Theme name (theme CSS is converted to reflowable EPUB form, then to Kindle form) |
+| `--css` | `""` | Custom CSS file path (overrides theme entirely) |
+| `--cover-image` | `""` | Custom cover image (`.png`/`.jpg`/`.jpeg`/`.svg`/`.webp`), full-bleed as the first page |
+| `--language` | `"en"` | Book language (BCP-47 tag, e.g. `en`, `es`) |
+| `--color-primary` | `""` | Theme override: primary color |
+| `--color-accent` | `""` | Theme override: accent color |
+| `--color-text` | `""` | Theme override: body text color |
+| `--color-muted` | `""` | Theme override: muted/caption color |
+| `--color-bg` | `""` | Theme override: page background color |
+| `--font-heading` | `""` | Theme override: heading font family |
+| `--font-body` | `""` | Theme override: body font family |
+| `--font-code` | `""` | Theme override: code font family |
+| `--density` | `""` | Spacing density: `compact`, `normal`, or `relaxed` |
+| `--allow-network-fonts` | `false` | Allow fetching Google Fonts declared by the theme |
+
+The target format (MOBI, AZW3, ...) is inferred from `--out`'s extension —
+`.mobi` (the default) is the most broadly compatible legacy Kindle format;
+`.azw3` targets the newer KF8 format with fuller CSS support. `ebook-convert`
+output on failure or timeout (5 minute default) is surfaced verbatim in the
+error message.
 
 ---
 
@@ -530,6 +631,7 @@ Available in HTML templates:
 
 - `NO_COLOR` environment variable is respected (disables colored output).
 - `PRETTY_PDF_CHROME_PATH` sets the default for `--chrome-path`: a specific Chrome/Chromium executable to use, skipping auto-detection and auto-download.
+- `PRETTY_PDF_CALIBRE_PATH` sets the default for `--calibre-path`: a specific Calibre `ebook-convert` executable to use, skipping `PATH` auto-detection.
 
 ## Exit Codes
 

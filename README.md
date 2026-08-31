@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/sazardev/go-pretty-pdf)](https://goreportcard.com/report/github.com/sazardev/go-pretty-pdf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Transform a directory of MDX files into a beautiful, print-ready PDF via headless Chrome.
+Transform a directory of MDX files into a beautiful, print-ready PDF via headless Chrome — plus EPUB 3 and Kindle (MOBI/AZW3) output.
 
 **Library + CLI.** Use it as a composable Go library or as a standalone command-line tool.
 
@@ -30,7 +30,8 @@ go get github.com/sazardev/go-pretty-pdf
 ### Requirements
 
 - **Go 1.26+**
-- **Chrome or Chromium** — optional. If none is found on your system, `pretty-pdf` automatically downloads and caches a small headless-only Chrome build the first time you run it (like Playwright/Puppeteer do). Already have Chrome installed? It's used as-is, nothing is downloaded. Prefer to control this yourself? Pass `--chrome-path /path/to/chrome` or set `PRETTY_PDF_CHROME_PATH`. Auto-download currently covers linux/amd64, darwin/amd64, darwin/arm64, and windows/amd64 — on linux/arm64 (no official build exists yet) install Chromium via your package manager and point `--chrome-path` at it.
+- **Chrome or Chromium** — optional, only for PDF output. If none is found on your system, `pretty-pdf` automatically downloads and caches a small headless-only Chrome build the first time you run it (like Playwright/Puppeteer do). Already have Chrome installed? It's used as-is, nothing is downloaded. Prefer to control this yourself? Pass `--chrome-path /path/to/chrome` or set `PRETTY_PDF_CHROME_PATH`. Auto-download currently covers linux/amd64, darwin/amd64, darwin/arm64, and windows/amd64 — on linux/arm64 (no official build exists yet) install Chromium via your package manager and point `--chrome-path` at it.
+- **Calibre** — optional, only for Kindle output (`--format kindle` / `pretty-pdf kindle`). Not bundled or auto-downloaded — install it from [calibre-ebook.com](https://calibre-ebook.com/download) so `ebook-convert` is on your `PATH`, or point `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH` at it.
 
 ## Quick start
 
@@ -46,8 +47,14 @@ pretty-pdf build --source my-book --out my-book.pdf
 # Watch for changes and rebuild
 pretty-pdf watch --source my-book --out my-book.pdf
 
+# Build a Kindle-ready ebook (needs Calibre's ebook-convert on PATH)
+pretty-pdf kindle --source my-book --out my-book.mobi
+
 # Validate MDX files
 pretty-pdf check --source my-book
+
+# Flag content that will render poorly on PDF/EPUB/Kindle (errors, warnings, improvements)
+pretty-pdf analyze --source my-book
 ```
 
 ### Library
@@ -307,7 +314,9 @@ see [docs/cli.md#themes](docs/cli.md#themes).
 ```
 pretty-pdf build     Build a PDF from MDX source files
 pretty-pdf epub      Build an EPUB from MDX source files (no Chrome required)
+pretty-pdf kindle    Build a Kindle-ready MOBI/AZW3 file (needs Calibre's ebook-convert)
 pretty-pdf check     Validate MDX files without building
+pretty-pdf analyze   Static cross-format rendering-quality analysis (no Chrome/Calibre)
 pretty-pdf theme     List, inspect, and manage themes
 pretty-pdf init      Scaffold a new book project (interactive wizard)
 pretty-pdf watch     Watch for changes and rebuild automatically

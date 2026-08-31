@@ -27,6 +27,8 @@ linters:
       min-occurrences: 3
     misspell:
       locale: US
+      ignore-rules:
+        - calibre
   exclusions:
     paths:
       - bin

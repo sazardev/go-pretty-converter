@@ -70,6 +70,28 @@ func runEpub(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("resolving theme: %w", err)
 	}
 
+	opts := epubOptionsFromConfig(cfg, css, epubLanguage)
+
+	writeSpinner := output.StartSpinner("Writing EPUB...")
+	if err := epub.Write(docs, opts, epubOutputPath); err != nil {
+		writeSpinner.Fail(err.Error())
+		return fmt.Errorf("writing EPUB: %w", err)
+	}
+
+	size := unknownFileSize
+	if info, statErr := os.Stat(epubOutputPath); statErr == nil {
+		size = formatBytes(info.Size())
+	}
+	writeSpinner.Done(fmt.Sprintf("Wrote %s (%s)", epubOutputPath, size))
+
+	return nil
+}
+
+// epubOptionsFromConfig builds the epub.Options shared by the standalone
+// `epub` and `kindle` commands (kindle converts this same EPUB content via
+// Calibre) — language is passed explicitly since each command binds it to
+// its own CLI flag var.
+func epubOptionsFromConfig(cfg *config.Config, css, language string) epub.Options {
 	opts := epub.DefaultOptions()
 	if cfg.Title != "" {
 		opts.Title = cfg.Title
@@ -78,25 +100,12 @@ func runEpub(cmd *cobra.Command, args []string) error {
 	if cfg.Author != "" {
 		opts.Author = cfg.Author
 	}
-	if epubLanguage != "" {
-		opts.Language = epubLanguage
+	if language != "" {
+		opts.Language = language
 	}
 	opts.CoverImage = cfg.Render.CoverImage
 	opts.CSS = css
-
-	writeSpinner := output.StartSpinner("Writing EPUB...")
-	if err := epub.Write(docs, opts, epubOutputPath); err != nil {
-		writeSpinner.Fail(err.Error())
-		return fmt.Errorf("writing EPUB: %w", err)
-	}
-
-	size := "unknown"
-	if info, statErr := os.Stat(epubOutputPath); statErr == nil {
-		size = formatBytes(info.Size())
-	}
-	writeSpinner.Done(fmt.Sprintf("Wrote %s (%s)", epubOutputPath, size))
-
-	return nil
+	return opts
 }
 
 func resolveEpubCSS(cfg *config.Config) (string, error) {

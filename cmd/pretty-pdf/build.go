@@ -15,6 +15,7 @@ import (
 	"github.com/sazardev/go-pretty-pdf/chromemgr"
 	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
 	"github.com/sazardev/go-pretty-pdf/config"
+	"github.com/sazardev/go-pretty-pdf/kindle"
 	"github.com/sazardev/go-pretty-pdf/mdx"
 	"github.com/sazardev/go-pretty-pdf/version"
 )
@@ -55,7 +56,20 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		chromeExecPath, chromeErr = resolveChromePath()
 	}
 
-	preflightResults := runPreFlight(cfg, chromeExecPath, chromeErr, needsChrome, outputPaths)
+	var calibreExecPath string
+	var calibreErr error
+	needsCalibre := false
+	for _, f := range formats {
+		if f == prettypdf.FormatKindle {
+			needsCalibre = true
+			break
+		}
+	}
+	if needsCalibre {
+		calibreExecPath, calibreErr = kindle.ResolveCalibre(calibrePath)
+	}
+
+	preflightResults := runPreFlight(cfg, chromeExecPath, chromeErr, needsChrome, calibreErr, needsCalibre, outputPaths)
 	output.PrintPreFlight(preflightResults)
 
 	failed := false
@@ -87,7 +101,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 
 	pipeline.Start("Parsing MDX files...")
-	opts := buildOpts(cfg, chromeExecPath)
+	opts := buildOpts(cfg, chromeExecPath, calibreExecPath)
 	opts = append(opts, prettypdf.WithFormats(formats...))
 	if buildLanguage != "" {
 		opts = append(opts, prettypdf.WithEpubLanguage(buildLanguage))
@@ -160,6 +174,15 @@ func runBuild(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("writing EPUB: %w", err)
 			}
 			pipeline.Done("Writing EPUB...")
+
+		case prettypdf.FormatKindle:
+			kindlePath := outputPaths[prettypdf.FormatKindle]
+			pipeline.Start("Converting to Kindle format...")
+			if err := pdf.RenderKindle(cmd.Context(), docs, kindlePath); err != nil {
+				pipeline.Fail("Converting to Kindle format...", err.Error())
+				return fmt.Errorf("writing Kindle file: %w", err)
+			}
+			pipeline.Done("Converting to Kindle format...")
 		}
 	}
 
@@ -173,7 +196,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	var outputLines []string
 	for _, f := range formats {
 		path := outputPaths[f]
-		fileSize := "unknown"
+		fileSize := unknownFileSize
 		if info, err := os.Stat(path); err == nil {
 			fileSize = formatBytes(info.Size())
 		}
@@ -254,7 +277,23 @@ func runBuildJSON(cmd *cobra.Command) error {
 		}
 	}
 
-	opts := buildOpts(cfg, chromeExecPath)
+	needsCalibre := false
+	for _, f := range formats {
+		if f == prettypdf.FormatKindle {
+			needsCalibre = true
+			break
+		}
+	}
+
+	var calibreExecPath string
+	if needsCalibre {
+		calibreExecPath, err = kindle.ResolveCalibre(calibrePath)
+		if err != nil {
+			return fmt.Errorf("resolving Calibre: %w", err)
+		}
+	}
+
+	opts := buildOpts(cfg, chromeExecPath, calibreExecPath)
 	opts = append(opts, prettypdf.WithFormats(formats...))
 	if buildLanguage != "" {
 		opts = append(opts, prettypdf.WithEpubLanguage(buildLanguage))
@@ -307,6 +346,11 @@ func runBuildJSON(cmd *cobra.Command) error {
 			epubPath := outputPaths[prettypdf.FormatEPUB]
 			if epubErr := pdf.RenderEpub(docs, epubPath); epubErr != nil {
 				return fmt.Errorf("writing EPUB: %w", epubErr)
+			}
+		case prettypdf.FormatKindle:
+			kindlePath := outputPaths[prettypdf.FormatKindle]
+			if kindleErr := pdf.RenderKindle(cmd.Context(), docs, kindlePath); kindleErr != nil {
+				return fmt.Errorf("writing Kindle file: %w", kindleErr)
 			}
 		}
 	}
@@ -379,7 +423,7 @@ func resolveChromePath() (string, error) {
 	return path, nil
 }
 
-func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, needsChrome bool, outputPaths map[prettypdf.OutputFormat]string) []output.PreFlightResult {
+func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, needsChrome bool, calibreErr error, needsCalibre bool, outputPaths map[prettypdf.OutputFormat]string) []output.PreFlightResult {
 	var results []output.PreFlightResult
 
 	if needsChrome {
@@ -396,6 +440,25 @@ func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, ne
 				name = "Chrome/Chromium available (--chrome-path)"
 			case chromeExecPath != "":
 				name = "Chrome/Chromium available (auto-downloaded)"
+			}
+			results = append(results, output.PreFlightResult{
+				Name:   name,
+				Passed: true,
+			})
+		}
+	}
+
+	if needsCalibre {
+		if calibreErr != nil {
+			results = append(results, output.PreFlightResult{
+				Name:    "Calibre ebook-convert available",
+				Passed:  false,
+				Message: calibreErr.Error(),
+			})
+		} else {
+			name := "Calibre ebook-convert available"
+			if calibrePath != "" {
+				name = "Calibre ebook-convert available (--calibre-path)"
 			}
 			results = append(results, output.PreFlightResult{
 				Name:   name,
@@ -511,6 +574,8 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 				paths[f] = out
 			case prettypdf.FormatEPUB:
 				paths[f] = base + ".epub"
+			case prettypdf.FormatKindle:
+				paths[f] = base + ".mobi"
 			}
 		}
 	case ".epub":
@@ -521,6 +586,20 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 				paths[f] = base + ".pdf"
 			case prettypdf.FormatEPUB:
 				paths[f] = out
+			case prettypdf.FormatKindle:
+				paths[f] = base + ".mobi"
+			}
+		}
+	case ".mobi", ".azw3":
+		base := strings.TrimSuffix(out, ext)
+		for _, f := range formats {
+			switch f {
+			case prettypdf.FormatPDF:
+				paths[f] = base + ".pdf"
+			case prettypdf.FormatEPUB:
+				paths[f] = base + ".epub"
+			case prettypdf.FormatKindle:
+				paths[f] = out
 			}
 		}
 	default:
@@ -530,6 +609,8 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 				paths[f] = out + ".pdf"
 			case prettypdf.FormatEPUB:
 				paths[f] = out + ".epub"
+			case prettypdf.FormatKindle:
+				paths[f] = out + ".mobi"
 			}
 		}
 	}
@@ -548,6 +629,8 @@ func buildStepNames(formats []prettypdf.OutputFormat) []string {
 			steps = append(steps, "Composing HTML...", "Rendering PDF...")
 		case prettypdf.FormatEPUB:
 			steps = append(steps, "Writing EPUB...")
+		case prettypdf.FormatKindle:
+			steps = append(steps, "Converting to Kindle format...")
 		}
 	}
 	return steps
