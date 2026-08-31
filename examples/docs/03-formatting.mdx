@@ -31,14 +31,14 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/sazardev/go-pretty-pdf"
+    "github.com/sazardev/go-pretty-converter"
 )
 
 func main() {
-    pdf, err := prettypdf.New(
-        prettypdf.WithSourceDir("./docs"),
-        prettypdf.WithOutputFile("output.pdf"),
-        prettypdf.WithTitle("My Document"),
+    pdf, err := prettyconverter.New(
+        prettyconverter.WithSourceDir("./docs"),
+        prettyconverter.WithOutputFile("output.pdf"),
+        prettyconverter.WithTitle("My Document"),
     )
     if err != nil {
         panic(err)

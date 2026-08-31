@@ -7,19 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/epub"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/epub"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 // docsEPUBDefault is the canonical, stable download URL for the default
 // (classic) theme's EPUB, mirroring docsPDFDefault.
-const docsEPUBDefault = "go-pretty-pdf-docs.epub"
+const docsEPUBDefault = "go-pretty-converter-docs.epub"
 
 // docsEPUBFilename returns the per-theme EPUB artifact name, mirroring
 // docsPDFFilename.
 func docsEPUBFilename(themeID string) string {
-	return "go-pretty-pdf-docs-" + themeID + ".epub"
+	return "go-pretty-converter-docs-" + themeID + ".epub"
 }
 
 // buildDocsEPUBs renders the same three docs sources (README + CLI + changelog)

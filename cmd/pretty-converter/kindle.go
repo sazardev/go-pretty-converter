@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/kindle"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/kindle"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 func runKindle(cmd *cobra.Command, args []string) error {
@@ -26,7 +26,7 @@ func runKindle(cmd *cobra.Command, args []string) error {
 	// output ending in .pdf/.epub maps to the .mobi variant.
 	kindleOutputPath := kindleOutPath
 	if !cmd.Flags().Changed("out") && cfg.Output != "" {
-		kindleOutputPath = resolveOutputPaths(cfg.Output, []prettypdf.OutputFormat{prettypdf.FormatKindle})[prettypdf.FormatKindle]
+		kindleOutputPath = resolveOutputPaths(cfg.Output, []prettyconverter.OutputFormat{prettyconverter.FormatKindle})[prettyconverter.FormatKindle]
 	}
 
 	calibreExecPath, err := kindle.ResolveCalibre(calibrePath)

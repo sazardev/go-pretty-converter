@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 // fakeEbookConvertPath is a compiled stand-in for Calibre's ebook-convert,

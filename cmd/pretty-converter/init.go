@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
 )
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -50,7 +50,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 			huh.NewInput().
 				Title(output.HeadingStyle.Render("Author")).
 				Description(output.MutedStyle.Render("The author's name")).
-				Placeholder("go-pretty-pdf").
+				Placeholder("go-pretty-converter").
 				Value(&authorName),
 
 			huh.NewSelect[string]().
@@ -70,7 +70,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 			huh.NewConfirm().
 				Title(output.HeadingStyle.Render("Create Project?")).
-				Description(output.MutedStyle.Render(fmt.Sprintf("Will create %s with go-pretty-pdf.yml", targetDir))).
+				Description(output.MutedStyle.Render(fmt.Sprintf("Will create %s with go-pretty-converter.yml", targetDir))).
 				Affirmative("Create!").
 				Negative("Cancel"),
 		),
@@ -84,7 +84,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		bookTitle = "My Book"
 	}
 	if authorName == "" {
-		authorName = "go-pretty-pdf"
+		authorName = "go-pretty-converter"
 	}
 	if themeChoice == "" {
 		themeChoice = defaultTheme
@@ -111,7 +111,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	absTarget, _ := filepath.Abs(targetDir)
 	fmt.Println(output.Success(fmt.Sprintf("Project created at %s", absTarget)))
 	fmt.Println("  " + output.MutedStyle.Render("Run:") +
-		" " + output.CodeStyle.Render(fmt.Sprintf("cd %s && pretty-pdf build", targetDir)))
+		" " + output.CodeStyle.Render(fmt.Sprintf("cd %s && pretty-converter build", targetDir)))
 
 	return nil
 }
@@ -128,7 +128,7 @@ func runInitBare(targetDir, bookTitle, authorName, themeChoice, srcDir string, j
 		absTarget, _ := filepath.Abs(targetDir)
 		fmt.Println(output.Success(fmt.Sprintf("Project created at %s", absTarget)))
 		fmt.Println("  " + output.MutedStyle.Render("Run:") +
-			" " + output.CodeStyle.Render(fmt.Sprintf("cd %s && pretty-pdf build", targetDir)))
+			" " + output.CodeStyle.Render(fmt.Sprintf("cd %s && pretty-converter build", targetDir)))
 	}
 	return nil
 }
@@ -138,7 +138,7 @@ func runInitBare(targetDir, bookTitle, authorName, themeChoice, srcDir string, j
 // binding to the same package globals — and pflag leaves the *last* flag
 // definition's default as the variable's initial value — so `init --bare`
 // without those flags would otherwise write an empty title/author into the
-// generated config instead of the documented "My Book"/"go-pretty-pdf"
+// generated config instead of the documented "My Book"/"go-pretty-converter"
 // defaults. cmd.Flags().Changed() distinguishes an explicit flag from the
 // polluted global.
 func initValues(cmd *cobra.Command) (t, a, th string) {
@@ -148,7 +148,7 @@ func initValues(cmd *cobra.Command) (t, a, th string) {
 		t = "My Book"
 	}
 	if !cmd.Flags().Changed("author") {
-		a = "go-pretty-pdf"
+		a = "go-pretty-converter"
 	}
 	if !cmd.Flags().Changed("theme") {
 		th = defaultTheme
@@ -186,12 +186,12 @@ func scaffoldWithConfig(targetDir, bookTitle, authorName, themeChoice, sourceDir
 		}
 	}
 
-	configData, err := initAssets.ReadFile("initassets/go-pretty-pdf.yml")
+	configData, err := initAssets.ReadFile("initassets/go-pretty-converter.yml")
 	if err != nil {
 		return fmt.Errorf("reading embedded config: %w", err)
 	}
 	configContent := replacer.Replace(string(configData))
-	configPath := filepath.Join(targetDir, "go-pretty-pdf.yml")
+	configPath := filepath.Join(targetDir, "go-pretty-converter.yml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		return fmt.Errorf("writing config: %w", err)
 	}

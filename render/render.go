@@ -13,7 +13,7 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 type Options struct {
@@ -104,7 +104,7 @@ func DefaultOptions() Options {
 // practical downside: it's still a local, sandboxed, single-use file,
 // cleaned up immediately after the page is captured.
 func navigationURLFor(htmlContent string) (navURL string, cleanup func(), err error) {
-	tmpFile, err := os.CreateTemp("", "go-pretty-pdf-*.html")
+	tmpFile, err := os.CreateTemp("", "go-pretty-converter-*.html")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating temp html file: %w", err)
 	}

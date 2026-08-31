@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 func mustParseDoc(t *testing.T, dir, filename, id, title, body string) *mdx.Document {

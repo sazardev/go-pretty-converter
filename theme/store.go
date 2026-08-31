@@ -12,13 +12,13 @@ import (
 const ThemeFileSuffix = ".theme.yml"
 
 // UserThemesDir returns the global, cross-project directory custom themes
-// can be installed into (e.g. ~/.config/pretty-pdf/themes on Linux).
+// can be installed into (e.g. ~/.config/pretty-converter/themes on Linux).
 func UserThemesDir() (string, error) {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("resolving user config dir: %w", err)
 	}
-	return filepath.Join(dir, "pretty-pdf", "themes"), nil
+	return filepath.Join(dir, "pretty-converter", "themes"), nil
 }
 
 // ProjectThemesDir returns the project-local themes directory, searched
@@ -101,8 +101,8 @@ func ScaffoldYAML(name string, from Theme) string {
 	if base == "" {
 		base = NameDefault
 	}
-	return fmt.Sprintf(`# Custom go-pretty-pdf theme.
-# Generated with: pretty-pdf theme new %s --from %s
+	return fmt.Sprintf(`# Custom go-pretty-converter theme.
+# Generated with: pretty-converter theme new %s --from %s
 name: %s
 description: "My custom theme"
 extends: %s

@@ -37,7 +37,7 @@ func TestGetAndList(t *testing.T) {
 // version honors an @page { margin: ... } rule — even "margin: 0" — over
 // whatever render.RenderToPDF's Page.printToPDF marginTop/Bottom/Left
 // /Right requested, silently making custom margins (render.Options or
-// go-pretty-pdf.yml's render.margin_*) have no effect at all. The
+// go-pretty-converter.yml's render.margin_*) have no effect at all. The
 // imperative printToPDF margins must stay the single source of truth for
 // page margins, which only holds if @page never declares one.
 func TestBaseCSSPageRuleHasNoMargin(t *testing.T) {

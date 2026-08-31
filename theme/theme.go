@@ -1,4 +1,4 @@
-// Package theme implements go-pretty-pdf's theme engine: a set of
+// Package theme implements go-pretty-converter's theme engine: a set of
 // professional built-in themes plus a customization layer (colors, fonts,
 // section toggles, density) that composes on top of them via CSS custom
 // properties, and a YAML format for user-defined custom themes.

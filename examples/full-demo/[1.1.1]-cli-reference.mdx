@@ -11,12 +11,12 @@ depends_on: ["[1.1.0]"]
 
 # CLI Flags Reference
 
-The `pretty-pdf build` command accepts these flags:
+The `pretty-converter build` command accepts these flags:
 
 ## Config & Source
 
 ```bash
-pretty-pdf build \
+pretty-converter build \
   --config custom.yml \
   --source ./docs \
   --out mybook.pdf
@@ -25,7 +25,7 @@ pretty-pdf build \
 ## Metadata
 
 ```bash
-pretty-pdf build \
+pretty-converter build \
   --title "{{product}} Guide" \
   --subtitle "A complete reference" \
   --author "{{company}}"
@@ -34,7 +34,7 @@ pretty-pdf build \
 ## Theme & Style
 
 ```bash
-pretty-pdf build \
+pretty-converter build \
   --theme minimal \
   --css ./custom.css \
   --template ./custom-template.html
@@ -43,7 +43,7 @@ pretty-pdf build \
 ## Render Options
 
 ```bash
-pretty-pdf build \
+pretty-converter build \
   --timeout 30s \
   --verbose
 ```

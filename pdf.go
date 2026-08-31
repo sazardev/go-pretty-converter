@@ -1,4 +1,4 @@
-package prettypdf
+package prettyconverter
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/sazardev/go-pretty-pdf/compose"
-	"github.com/sazardev/go-pretty-pdf/config"
-	"github.com/sazardev/go-pretty-pdf/epub"
-	"github.com/sazardev/go-pretty-pdf/kindle"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/render"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/compose"
+	"github.com/sazardev/go-pretty-converter/config"
+	"github.com/sazardev/go-pretty-converter/epub"
+	"github.com/sazardev/go-pretty-converter/kindle"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/render"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 type OutputFormat string
@@ -359,7 +359,7 @@ func WithConfig(cfg *config.Config) Option {
 }
 
 // themeOptionsFromConfig converts cfg.ThemeOptions (as loaded from
-// go-pretty-pdf.yml or set by CLI flags) into theme.Options.
+// go-pretty-converter.yml or set by CLI flags) into theme.Options.
 func themeOptionsFromConfig(cfg *config.Config) theme.Options {
 	to := cfg.ThemeOptions
 	return theme.Options{
@@ -423,7 +423,7 @@ func WithConfigCSSAndTemplate(cfg *config.Config) Option {
 // variable substitution (cfg.Vars), and render settings (cfg.Render:
 // timeout, paper size, margins, header title). Unlike WithConfig and
 // WithConfigCSSAndTemplate, which only cover a subset of Config, this is
-// the single option needed to fully apply a loaded go-pretty-pdf.yml.
+// the single option needed to fully apply a loaded go-pretty-converter.yml.
 func WithFullConfig(cfg *config.Config) Option {
 	return func(p *PDF) {
 		WithConfig(cfg)(p)
@@ -536,7 +536,7 @@ func New(opts ...Option) (*PDF, error) {
 	if p.epubOpts.Subtitle == "" {
 		p.epubOpts.Subtitle = p.composeOpts.Subtitle
 	}
-	if p.epubOpts.Author == "" || p.epubOpts.Author == "go-pretty-pdf" {
+	if p.epubOpts.Author == "" || p.epubOpts.Author == "go-pretty-converter" {
 		p.epubOpts.Author = p.composeOpts.Author
 	}
 	if p.renderOpts.CoverImagePath != "" {

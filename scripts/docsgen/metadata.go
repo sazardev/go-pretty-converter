@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/theme"
-	"github.com/sazardev/go-pretty-pdf/version"
+	"github.com/sazardev/go-pretty-converter/theme"
+	"github.com/sazardev/go-pretty-converter/version"
 )
 
 // versionJSONName is a machine-readable build manifest consumed by
@@ -49,7 +49,7 @@ func buildMetadata() siteMetadata {
 		License:    "MIT",
 		Homepage:   siteBaseURL,
 		Repository: siteRepoURL,
-		GoPackage:  "github.com/sazardev/go-pretty-pdf",
+		GoPackage:  "github.com/sazardev/go-pretty-converter",
 		BuiltAt:    now.Format("2006-01-02 15:04:05 MST"),
 		BuiltAtUTC: now.UTC().Format(time.RFC3339),
 		Themes:     len(names),

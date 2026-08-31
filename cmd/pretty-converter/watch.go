@@ -11,8 +11,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
 )
 
 func runWatch(cmd *cobra.Command, args []string) error {
@@ -112,7 +112,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 		startTime := time.Now()
 
 		opts := buildOpts(cfg, chromeExecPath, "")
-		pdf, err := prettypdf.New(opts...)
+		pdf, err := prettyconverter.New(opts...)
 
 		if err != nil {
 			statsMu.Lock()

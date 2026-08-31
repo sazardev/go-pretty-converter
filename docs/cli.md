@@ -2,23 +2,23 @@
 
 ## Overview
 
-`pretty-pdf` transforms a directory of MDX files into a print-ready PDF, a reflowable EPUB 3 file, and/or a Kindle-ready MOBI/AZW3 file. Documents are sorted by their `[X.Y.Z]` frontmatter ID, not by filename.
+`pretty-converter` transforms a directory of MDX files into a print-ready PDF, a reflowable EPUB 3 file, and/or a Kindle-ready MOBI/AZW3 file. Documents are sorted by their `[X.Y.Z]` frontmatter ID, not by filename.
 
-GitHub: <https://github.com/sazardev/go-pretty-pdf>
+GitHub: <https://github.com/sazardev/go-pretty-converter>
 
 ## Requirements
 
-- **Chrome or Chromium** — optional. If `pretty-pdf` can't find one on your system, it automatically downloads and caches an official, automation-only "chrome-headless-shell" build the first time you run a command that renders a PDF (`build`, `watch`). This mirrors what tools like Playwright/Puppeteer do; `serve` never needs Chrome since it only previews HTML. The download is cached under your OS's user cache directory (e.g. `~/.cache/go-pretty-pdf/chrome` on Linux) and reused on every later run.
+- **Chrome or Chromium** — optional. If `pretty-converter` can't find one on your system, it automatically downloads and caches an official, automation-only "chrome-headless-shell" build the first time you run a command that renders a PDF (`build`, `watch`). This mirrors what tools like Playwright/Puppeteer do; `serve` never needs Chrome since it only previews HTML. The download is cached under your OS's user cache directory (e.g. `~/.cache/go-pretty-converter/chrome` on Linux) and reused on every later run.
   - Already have Chrome/Chromium installed? It's detected and used automatically — nothing is downloaded.
-  - Want to pin a specific binary instead (skip detection/download entirely)? Pass `--chrome-path /path/to/chrome` or set the `PRETTY_PDF_CHROME_PATH` environment variable.
+  - Want to pin a specific binary instead (skip detection/download entirely)? Pass `--chrome-path /path/to/chrome` or set the `PRETTY_CONVERTER_CHROME_PATH` environment variable.
   - Supported for auto-download: linux/amd64, darwin/amd64, darwin/arm64, windows/amd64. On linux/arm64 (no official build exists yet), install Chromium via your system's package manager and use `--chrome-path`.
-- **Calibre** — required only for Kindle output (`--format kindle`, or the `kindle` command). `pretty-pdf` does not bundle or auto-download Calibre; install it from <https://calibre-ebook.com/download> and make sure `ebook-convert` is on your `PATH`, or point to it explicitly with `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. PDF and EPUB output never need Calibre.
+- **Calibre** — required only for Kindle output (`--format kindle`, or the `kindle` command). `pretty-converter` does not bundle or auto-download Calibre; install it from <https://calibre-ebook.com/download> and make sure `ebook-convert` is on your `PATH`, or point to it explicitly with `--calibre-path` / `PRETTY_CONVERTER_CALIBRE_PATH`. PDF and EPUB output never need Calibre.
 - Go 1.26+ (if building from source).
 
 ## Usage
 
 ```
-pretty-pdf [command] [flags]
+pretty-converter [command] [flags]
 ```
 
 ## Global Flags
@@ -27,8 +27,8 @@ pretty-pdf [command] [flags]
 |---|---|---|
 | `--config` | `""` | Path to config file |
 | `--source` | `"book"` | Source MDX directory |
-| `--chrome-path` | `$PRETTY_PDF_CHROME_PATH` | Path to a Chrome/Chromium executable (skips auto-detection/download) |
-| `--calibre-path` | `$PRETTY_PDF_CALIBRE_PATH` | Path to Calibre's `ebook-convert` executable (skips PATH auto-detection) — used by `--format kindle` and the `kindle` command |
+| `--chrome-path` | `$PRETTY_CONVERTER_CHROME_PATH` | Path to a Chrome/Chromium executable (skips auto-detection/download) |
+| `--calibre-path` | `$PRETTY_CONVERTER_CALIBRE_PATH` | Path to Calibre's `ebook-convert` executable (skips PATH auto-detection) — used by `--format kindle` and the `kindle` command |
 | `--verbose` | `false` | Verbose output |
 | `--no-color` | `false` | Disable colored output |
 | `--quiet` | `false` | Suppress non-error output |
@@ -41,7 +41,7 @@ pretty-pdf [command] [flags]
 Parse MDX files, validate them, compose HTML, and render to PDF, EPUB, and/or Kindle (MOBI/AZW3).
 
 ```
-pretty-pdf build [flags]
+pretty-converter build [flags]
 ```
 
 | Flag | Default | Description |
@@ -134,7 +134,7 @@ Before the pipeline starts, `build` verifies (per selected formats):
 Parse and validate all MDX files without building a PDF. Previously named `validate`.
 
 ```
-pretty-pdf check [flags]
+pretty-converter check [flags]
 ```
 
 | Flag | Default | Description |
@@ -156,7 +156,7 @@ code blocks, lists, and chapter length — with an eye specifically on how
 each renders across formats.
 
 ```
-pretty-pdf analyze [flags]
+pretty-converter analyze [flags]
 ```
 
 | Flag | Default | Description |
@@ -204,7 +204,7 @@ Chrome/Chromium involved, unlike `build`. Each MDX document becomes its own
 chapter, in the same order as the PDF's table of contents.
 
 ```
-pretty-pdf epub [flags]
+pretty-converter epub [flags]
 ```
 
 | Flag | Default | Description |
@@ -229,7 +229,7 @@ pretty-pdf epub [flags]
 | `--allow-network-fonts` | `false` | Allow fetching Google Fonts declared by the theme |
 
 Reuses `--source`/`--config` like every other command, and `render.cover_image`
-from `go-pretty-pdf.yml` if `--cover-image` isn't passed — the same cover
+from `go-pretty-converter.yml` if `--cover-image` isn't passed — the same cover
 image works for both `build` and `epub`. Unlike PDF output — which uses
 `@page` rules and print-oriented layout — EPUB uses the same theme system
 through `ResolveForEPUB`, which produces a reflowable stylesheet (relative
@@ -246,10 +246,10 @@ the same EPUB the `epub` command would produce, then converts it with
 Calibre's `ebook-convert` (Amazon retired its own KindleGen tool in 2022;
 Calibre is the standard replacement), so **Calibre must be installed** with
 `ebook-convert` reachable on `PATH` — or pointed to explicitly with
-`--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. See [Requirements](#requirements).
+`--calibre-path` / `PRETTY_CONVERTER_CALIBRE_PATH`. See [Requirements](#requirements).
 
 ```
-pretty-pdf kindle [flags]
+pretty-converter kindle [flags]
 ```
 
 | Flag | Default | Description |
@@ -286,23 +286,23 @@ error message.
 List, inspect, and manage themes.
 
 ```
-pretty-pdf theme list
-pretty-pdf theme show <name>
-pretty-pdf theme new <name> [flags]
-pretty-pdf theme add <path> [flags]
+pretty-converter theme list
+pretty-converter theme show <name>
+pretty-converter theme new <name> [flags]
+pretty-converter theme add <path> [flags]
 ```
 
 #### `theme list`
 
 Prints every builtin theme (name + description) followed by any custom
 themes discovered in `./themes/` (project) and the global themes directory
-(`~/.config/pretty-pdf/themes` on Linux, via `os.UserConfigDir()`).
+(`~/.config/pretty-converter/themes` on Linux, via `os.UserConfigDir()`).
 
 #### `theme show <name>`
 
 Resolves a theme (builtin, custom, or a `.theme.yml`/`.css` path) with no
 customization and prints its final, fully-assembled CSS to stdout — useful
-to inspect a theme or pipe it somewhere (`pretty-pdf theme show dark > dark.css`).
+to inspect a theme or pipe it somewhere (`pretty-converter theme show dark > dark.css`).
 
 #### `theme new <name>`
 
@@ -333,7 +333,7 @@ theme (a loose `.css` file is wrapped into a minimal `.theme.yml` with
 Scaffold a new book project with sample MDX files and configuration.
 
 ```
-pretty-pdf init [directory] [flags]
+pretty-converter init [directory] [flags]
 ```
 
 Interactive mode (default): runs a terminal form asking for title, author, theme, source directory.
@@ -342,7 +342,7 @@ Interactive mode (default): runs a terminal form asking for title, author, theme
 |---|---|---|
 | `--bare` | `false` | Non-interactive init with flags |
 | `--title` | `"My Book"` | Book title (for `--bare`) |
-| `--author` | `"go-pretty-pdf"` | Book author (for `--bare`) |
+| `--author` | `"go-pretty-converter"` | Book author (for `--bare`) |
 | `--theme` | `"default"` | Book theme (for `--bare`) |
 | `--json` | `false` | Output as JSON |
 
@@ -353,7 +353,7 @@ Interactive mode (default): runs a terminal form asking for title, author, theme
 Parse MDX files, compose HTML, and serve with live reload on file changes. No Chrome required.
 
 ```
-pretty-pdf serve [flags]
+pretty-converter serve [flags]
 ```
 
 | Flag | Default | Description |
@@ -369,7 +369,7 @@ Uses Server-Sent Events for live reload. Watches `.md`, `.mdx`, `.txt`, `.yaml`,
 Watch the source directory for changes and rebuild the PDF on every file change.
 
 ```
-pretty-pdf watch [flags]
+pretty-converter watch [flags]
 ```
 
 Debounces changes by 300ms. Watches `.md`, `.mdx`, `.txt`, `.yaml`, and `.yml` files. Prints a build/error summary on `Ctrl+C`.
@@ -381,7 +381,7 @@ Debounces changes by 300ms. Watches `.md`, `.mdx`, `.txt`, `.yaml`, and `.yml` f
 Print the version number.
 
 ```
-pretty-pdf version
+pretty-converter version
 ```
 
 ### `completion`
@@ -389,21 +389,21 @@ pretty-pdf version
 Generate shell completion scripts.
 
 ```
-pretty-pdf completion [bash|zsh|fish|powershell]
+pretty-converter completion [bash|zsh|fish|powershell]
 ```
 
 | Shell | Install command |
 |---|---|
-| bash | `pretty-pdf completion bash > /etc/bash_completion.d/pretty-pdf` |
-| zsh | `pretty-pdf completion zsh > "${fpath[1]}/_pretty-pdf"` |
-| fish | `pretty-pdf completion fish > ~/.config/fish/completions/pretty-pdf.fish` |
-| powershell | `pretty-pdf completion powershell > _pretty-pdf.ps1` then `. .\_pretty-pdf.ps1` |
+| bash | `pretty-converter completion bash > /etc/bash_completion.d/pretty-converter` |
+| zsh | `pretty-converter completion zsh > "${fpath[1]}/_pretty-converter"` |
+| fish | `pretty-converter completion fish > ~/.config/fish/completions/pretty-converter.fish` |
+| powershell | `pretty-converter completion powershell > _pretty-converter.ps1` then `. .\_pretty-converter.ps1` |
 
 ---
 
 ## Config File
 
-`go-pretty-pdf.yml` is auto-discovered by walking up from the working directory.
+`go-pretty-converter.yml` is auto-discovered by walking up from the working directory.
 Can also be specified explicitly with `--config`.
 
 ### Example
@@ -459,7 +459,7 @@ render:
 |---|---|---|
 | `title` | `"Document"` | Book title |
 | `subtitle` | `""` | Book subtitle |
-| `author` | `"go-pretty-pdf"` | Book author |
+| `author` | `"go-pretty-converter"` | Book author |
 | `source` | `"book"` | Source MDX directory |
 | `output` | `"out.pdf"` | Output path (extension-added per format when using `--format` from CLI) |
 | `theme` | `""` | Theme name (builtin, custom, or a `.theme.yml`/`.css` path) — see [Themes](#themes) |
@@ -542,8 +542,8 @@ shared structural stylesheet (`theme/assets/base.css`):
 | `latex` | academic | Mathematical/scientific paper look with automatic section numbering. |
 | `gruvbox` | technical | Retro warm dark palette inspired by the popular Gruvbox editor theme. |
 
-Run `pretty-pdf theme list` to see this list plus any custom themes, and
-`pretty-pdf theme show <name>` to print a theme's final resolved CSS.
+Run `pretty-converter theme list` to see this list plus any custom themes, and
+`pretty-converter theme show <name>` to print a theme's final resolved CSS.
 
 ### Customizing a theme without writing CSS
 
@@ -552,7 +552,7 @@ Run `pretty-pdf theme list` to see this list plus any custom themes, and
 touching CSS:
 
 ```bash
-pretty-pdf build --theme corporate \
+pretty-converter build --theme corporate \
   --color-primary "#0ea5e9" --font-heading "Georgia, serif" \
   --no-cover --no-page-numbers --density compact
 ```
@@ -595,17 +595,17 @@ css: |
 
 Custom themes are discovered by name in `./themes/` (project-local, checked
 first) and then in the global themes directory
-(`~/.config/pretty-pdf/themes` on Linux). Use them the same way as a
+(`~/.config/pretty-converter/themes` on Linux). Use them the same way as a
 builtin: `--theme my-report` or `theme: my-report` in config.
 
 Manage them with:
 
 ```bash
-pretty-pdf theme new my-report --from corporate   # scaffold ./themes/my-report.theme.yml
-pretty-pdf theme add ./some-theme.theme.yml        # import an existing theme file
-pretty-pdf theme add ./some.css --as my-report     # or wrap a plain CSS file
-pretty-pdf theme list                              # see builtins + everything discovered
-pretty-pdf theme show my-report                    # print the fully resolved CSS
+pretty-converter theme new my-report --from corporate   # scaffold ./themes/my-report.theme.yml
+pretty-converter theme add ./some-theme.theme.yml        # import an existing theme file
+pretty-converter theme add ./some.css --as my-report     # or wrap a plain CSS file
+pretty-converter theme list                              # see builtins + everything discovered
+pretty-converter theme show my-report                    # print the fully resolved CSS
 ```
 
 A `--theme` value ending in `.theme.yml`/`.css` is treated as a direct file
@@ -630,8 +630,8 @@ Available in HTML templates:
 ## Environment
 
 - `NO_COLOR` environment variable is respected (disables colored output).
-- `PRETTY_PDF_CHROME_PATH` sets the default for `--chrome-path`: a specific Chrome/Chromium executable to use, skipping auto-detection and auto-download.
-- `PRETTY_PDF_CALIBRE_PATH` sets the default for `--calibre-path`: a specific Calibre `ebook-convert` executable to use, skipping `PATH` auto-detection.
+- `PRETTY_CONVERTER_CHROME_PATH` sets the default for `--chrome-path`: a specific Chrome/Chromium executable to use, skipping auto-detection and auto-download.
+- `PRETTY_CONVERTER_CALIBRE_PATH` sets the default for `--calibre-path`: a specific Calibre `ebook-convert` executable to use, skipping `PATH` auto-detection.
 
 ## Exit Codes
 

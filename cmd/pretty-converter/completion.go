@@ -14,16 +14,16 @@ var completionCmd = &cobra.Command{
 Run the output through your shell's completion mechanism to enable tab completion.
 
 Bash:
-  pretty-pdf completion bash > /etc/bash_completion.d/pretty-pdf
+  pretty-converter completion bash > /etc/bash_completion.d/pretty-converter
 
 Zsh:
-  pretty-pdf completion zsh > "${fpath[1]}/_pretty-pdf"
+  pretty-converter completion zsh > "${fpath[1]}/_pretty-converter"
 
 Fish:
-  pretty-pdf completion fish > ~/.config/fish/completions/pretty-pdf.fish
+  pretty-converter completion fish > ~/.config/fish/completions/pretty-converter.fish
 
 PowerShell:
-  pretty-pdf completion powershell > _pretty-pdf.ps1 & . .\_pretty-pdf.ps1
+  pretty-converter completion powershell > _pretty-converter.ps1 & . .\_pretty-converter.ps1
 `,
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: []string{"bash", "zsh", "fish", "powershell"},

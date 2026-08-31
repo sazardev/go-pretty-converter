@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 // Options configures the generated EPUB. Zero-value fields fall back to
@@ -39,7 +39,7 @@ const defaultTitle = "Document"
 func DefaultOptions() Options {
 	return Options{
 		Title:    defaultTitle,
-		Author:   "go-pretty-pdf",
+		Author:   "go-pretty-converter",
 		Language: "en",
 	}
 }

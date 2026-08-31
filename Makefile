@@ -1,11 +1,11 @@
 GOCMD      = go
-MAIN       = ./cmd/pretty-pdf
-BINARY     = pretty-pdf
+MAIN       = ./cmd/pretty-converter
+BINARY     = pretty-converter
 BUILD_DIR  = bin
 GOOS       = $(shell $(GOCMD) env GOOS)
 VERSION    = $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS    = -s -w -X github.com/sazardev/go-pretty-pdf/version.Version=$(VERSION)
-LDFLAGS_NO_STRIP = -X github.com/sazardev/go-pretty-pdf/version.Version=$(VERSION)
+LDFLAGS    = -s -w -X github.com/sazardev/go-pretty-converter/version.Version=$(VERSION)
+LDFLAGS_NO_STRIP = -X github.com/sazardev/go-pretty-converter/version.Version=$(VERSION)
 
 .PHONY: help lint test test-verbose test-cover build build-release install clean fmt tidy vulncheck \
         bump-patch bump-minor bump-major release-dry-run version-info
@@ -15,7 +15,7 @@ LDFLAGS_NO_STRIP = -X github.com/sazardev/go-pretty-pdf/version.Version=$(VERSIO
 ##@ Development
 
 help: ## Show this help
-	@echo "go-pretty-pdf Makefile"
+	@echo "go-pretty-converter Makefile"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make [target]"
@@ -71,7 +71,7 @@ install: ## Install binary to GOPATH/bin
 
 version-info: ## Print current version info
 	@echo "Version: $(VERSION)"
-	@echo "Module:  github.com/sazardev/go-pretty-pdf"
+	@echo "Module:  github.com/sazardev/go-pretty-converter"
 	@echo "Source:  version/version.go"
 
 bump-patch: ## Bump patch version (x.y.Z)

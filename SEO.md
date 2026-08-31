@@ -1,7 +1,7 @@
 # SEO & Indexing Runbook
 
-One-time and per-release steps to keep `go-pretty-pdf`'s site
-(`https://sazardev.github.io/go-pretty-pdf/`) indexed, fresh, and ranking.
+One-time and per-release steps to keep `go-pretty-converter`'s site
+(`https://sazardev.github.io/go-pretty-converter/`) indexed, fresh, and ranking.
 
 ## How the site is published
 
@@ -31,18 +31,18 @@ One-time and per-release steps to keep `go-pretty-pdf`'s site
 ### 1. Google Search Console
 
 1. Go to <https://search.google.com/search-console> → **Add property** →
-   **URL prefix** → `https://sazardev.github.io/go-pretty-pdf/`.
+   **URL prefix** → `https://sazardev.github.io/go-pretty-converter/`.
    (Verification: as the `sazardev` account owns the `github.io` subdomain you
    can pick the simplest method — upload the HTML meta tag file into the repo
    temporarily, or use the GitHub method if available.)
 2. **Sitemaps** → submit `sitemap.xml` → expect "Success".
-3. **URL Inspection** for `https://sazardev.github.io/go-pretty-pdf/` and
+3. **URL Inspection** for `https://sazardev.github.io/go-pretty-converter/` and
    `/docs.html` → **Request indexing** for each.
 
 ### 2. Bing Webmaster Tools
 
 1. <https://www.bing.com/webmasters> → add site
-   `https://sazardev.github.io/go-pretty-pdf/`.
+   `https://sazardev.github.io/go-pretty-converter/`.
 2. Either **import from Google Search Console** (one click, if both use the
    same Google account) or paste the GSC verification meta tag.
 3. **Sitemaps** → submit `sitemap.xml`. Bing also feeds Copilot/Edge results,
@@ -57,16 +57,16 @@ Hacker News, etc.) — independent of the site's og-image.
    `_site/og-image.png` (1200x630).
 2. In the repo **Settings → Social preview** upload that PNG (or keep the
    default). Note: `_site/` is gitignored, so download it from
-   <https://sazardev.github.io/go-pretty-pdf/og-image.png> (or regenerate and
+   <https://sazardev.github.io/go-pretty-converter/og-image.png> (or regenerate and
    copy it out) before uploading.
 
 ## Per-release checks
 
 After each deploy (verify on the live URL):
 
-- [ ] `https://sazardev.github.io/go-pretty-pdf/` returns 200 and shows the
+- [ ] `https://sazardev.github.io/go-pretty-converter/` returns 200 and shows the
       new description/title.
-- [ ] `https://sazardev.github.io/go-pretty-pdf/docs.html` returns 200.
+- [ ] `https://sazardev.github.io/go-pretty-converter/docs.html` returns 200.
 - [ ] `sitemap.xml` has today's `lastmod` and lists the current theme count
       (17 PDFs/EPUBs).
 - [ ] GSC **Crawl → Sitemaps** still reports "Success" (it auto-re-fetches).
@@ -88,7 +88,7 @@ After each deploy (verify on the live URL):
 
 ```bash
 go run ./scripts/docsgen            # regenerate _site/ locally (needs Chrome)
-curl -s https://sazardev.github.io/go-pretty-pdf/sitemap.xml | head
+curl -s https://sazardev.github.io/go-pretty-converter/sitemap.xml | head
 # trigger a rebuild + deploy without code changes:
 #  gh workflow run docs.yml   (or push an empty commit)
 ```

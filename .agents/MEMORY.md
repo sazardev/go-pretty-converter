@@ -1,8 +1,8 @@
-# go-pretty-pdf — System Memory
+# go-pretty-converter — System Memory
 
 ## Purpose
 Transform MDX source files into print-ready PDF via headless Chrome.
-Both a Go library (`prettypdf`) and CLI tool (`pretty-pdf`).
+Both a Go library (`prettyconverter`) and CLI tool (`pretty-converter`).
 
 ---
 
@@ -17,10 +17,10 @@ Raw MDX → substituteVars() ({{var}}) → goldmark parse → Transpile custom c
 ## Package Map
 
 ```
-cmd/pretty-pdf/          CLI entrypoint (cobra) — build, check, init, version, watch
-cmd/pretty-pdf/output/   DX output package: lipgloss styles, spinner, banner, panels, pipeline progress
+cmd/pretty-converter/          CLI entrypoint (cobra) — build, check, init, version, watch
+cmd/pretty-converter/output/   DX output package: lipgloss styles, spinner, banner, panels, pipeline progress
 config/                  YAML config loader — Config struct, Load(), FindConfig(), Default()
-pdf.go                   Root package prettypdf — New(), Build(), Validate(), 18 functional options
+pdf.go                   Root package prettyconverter — New(), Build(), Validate(), 18 functional options
                          ↑ step-by-step: ParseDir(), ValidateDoc(), ComposeHTML(), Render()
 mdx/                     Parser (goldmark), component transpiler, DefaultValidator, Document type
                          ↑ partial parsing: ParseFileError, ParseErrors (collect per-file, continue)
@@ -33,7 +33,7 @@ scripts/bump/            SemVer bump script — reads/writes version/version.go
 
 ---
 
-## Config File (`go-pretty-pdf.yml`)
+## Config File (`go-pretty-converter.yml`)
 
 Auto-discovered in CWD (or via `--config` flag). Precedence: **CLI flags > config values > code defaults**.
 
@@ -79,7 +79,7 @@ render:
 | `source` | `"book"` |
 | `output` | `"out.pdf"` |
 | `title` | `"Document"` |
-| `author` | `"go-pretty-pdf"` |
+| `author` | `"go-pretty-converter"` |
 | `theme` | `""` (→ default theme) |
 | Lint: require_frontmatter | `[id, title]` |
 | Lint: no_duplicate_ids | `true` |
@@ -102,7 +102,7 @@ render:
 
 ## CLI Commands
 
-### `pretty-pdf build`
+### `pretty-converter build`
 
 Animated pipeline: banner → pre-flight → parse (spinner) → validate (spinner) → compose (spinner) → render (spinner) → build summary panel.
 
@@ -152,7 +152,7 @@ pdf.ComposeHTML(docs)→ string (HTML), error
 pdf.Render(html)     → error (headless Chrome)
 ```
 
-### `pretty-pdf check`
+### `pretty-converter check`
 
 Styled validation: spinner for parsing → results panel.
 
@@ -164,21 +164,21 @@ Flags: `--config`, `--source`, `--strict`, `--verbose`, `--json`, `--no-color`
 Output: colored summary `N error(s), M warning(s)` via `PrintValidationSummary`.
 Exit code 1 if errors > 0.
 
-### `pretty-pdf init [dir]`
+### `pretty-converter init [dir]`
 
 **Interactive mode** (default): huh form wizard asking for title, author, theme (default/minimal), source dir, confirms before scaffolding.
 
 **JSON/bare mode** (`--json`): scaffold with all defaults, no prompts.
 
 Scaffolds:
-- `go-pretty-pdf.yml` (default config)
+- `go-pretty-converter.yml` (default config)
 - `[1.0.0]-introduction.mdx`
 - `[1.1.0]-getting-started.mdx`
 - `[1.1.1]-installation.mdx` (has `{{product}}` / `{{company}}` var example)
 
 Fails if target directory already exists.
 
-### `pretty-pdf watch`
+### `pretty-converter watch`
 
 fsnotify recursive watcher. 300ms debounce. Animated banners per rebuild.
 
@@ -186,10 +186,10 @@ Ctrl+C handler prints summary panel (builds, errors, last build time).
 
 Flags: same as `build` + `--config`.
 
-### `pretty-pdf version`
+### `pretty-converter version`
 
-Prints `pretty-pdf <version>`. Version source: `github.com/sazardev/go-pretty-pdf/version.Version`.
-Defaults to `"dev"` in `version/version.go`, override at build via `-ldflags "-X github.com/sazardev/go-pretty-pdf/version.Version=X.Y.Z"`.
+Prints `pretty-converter <version>`. Version source: `github.com/sazardev/go-pretty-converter/version.Version`.
+Defaults to `"dev"` in `version/version.go`, override at build via `-ldflags "-X github.com/sazardev/go-pretty-converter/version.Version=X.Y.Z"`.
 
 ### Global Flags
 
@@ -212,7 +212,7 @@ Defaults to `"dev"` in `version/version.go`, override at build via `-ldflags "-X
 | `WithOutputFile` | `(path string)` | output | `"out.pdf"` |
 | `WithTitle` | `(t string)` | compose title | `"Document"` |
 | `WithSubtitle` | `(s string)` | compose subtitle | `""` |
-| `WithAuthor` | `(a string)` | compose author | `"go-pretty-pdf"` |
+| `WithAuthor` | `(a string)` | compose author | `"go-pretty-converter"` |
 | `WithCSS` | `(css string)` | compose CSS content | embedded `print.css` |
 | `WithTemplate` | `(html string)` | compose template | embedded `template.html` |
 | `WithTheme` | `(t theme.Theme)` | CSS + Template | default |
@@ -320,7 +320,7 @@ type Parser struct {
 
 Syntax: `{{key}}` — simple string replacement using `strings.ReplaceAll(raw, "{{"+k+"}}", v)`.
 
-Set via `WithVars(map)` parser option or `prettypdf.WithVars(map)` root option.
+Set via `WithVars(map)` parser option or `prettyconverter.WithVars(map)` root option.
 
 ### Components
 
@@ -437,18 +437,18 @@ go test ./config/... -v          # Config defaults (1), Load (1), partial defaul
 
 | File | Lines | Role |
 |------|-------|------|
-| `cmd/pretty-pdf/main.go` | ~110 | Thin cobra entry — global vars, root/builtin/version/cmd/watcher commands |
-| `cmd/pretty-pdf/config.go` | ~120 | `loadConfig()`, `buildOpts()`, `parseCSSUnit()`, `validatorFromConfig()`, `parserFromConfig()` |
-| `cmd/pretty-pdf/build.go` | ~332 | `runBuild()` animated pipeline, `runBuildJSON()`, `runPreFlight()`, `countMDXFiles()`, `formatBytes()` |
-| `cmd/pretty-pdf/check.go` | ~100 | `runCheck()` styled validation with spinner + summary panel |
-| `cmd/pretty-pdf/init.go` | ~160 | `runInit()` huh interactive wizard, `runInitBare()` JSON mode, `scaffoldWithConfig()` |
-| `cmd/pretty-pdf/watch.go` | ~140 | `runWatch()` fsnotify recursive watcher with debounce + stats |
-| `cmd/pretty-pdf/output/styles.go` | ~120 | Lipgloss styles: colors, symbols, Panel/Success/Error/Warn/Info helpers, `NoColor()` |
-| `cmd/pretty-pdf/output/spinner.go` | ~60 | Animated goroutine spinner with `ack` channel sync |
-| `cmd/pretty-pdf/output/banner.go` | ~30 | ASCII art "GO → PDF" banner |
-| `cmd/pretty-pdf/output/panels.go` | ~110 | `BuildStats`, `PrintBuildSummary`, `PrintValidationSummary`, `PreFlightResult`, `PrintPreFlight` |
-| `cmd/pretty-pdf/output/progress.go` | ~165 | `PipelineProgress` (Start/Done/Fail/Skip/PrintSummary), `WatchStats`, `PrintWatchBanner/Rebuild/Summary` |
-| `cmd/pretty-pdf/initassets/*` | 4 files | Scaffold templates for `init` command |
+| `cmd/pretty-converter/main.go` | ~110 | Thin cobra entry — global vars, root/builtin/version/cmd/watcher commands |
+| `cmd/pretty-converter/config.go` | ~120 | `loadConfig()`, `buildOpts()`, `parseCSSUnit()`, `validatorFromConfig()`, `parserFromConfig()` |
+| `cmd/pretty-converter/build.go` | ~332 | `runBuild()` animated pipeline, `runBuildJSON()`, `runPreFlight()`, `countMDXFiles()`, `formatBytes()` |
+| `cmd/pretty-converter/check.go` | ~100 | `runCheck()` styled validation with spinner + summary panel |
+| `cmd/pretty-converter/init.go` | ~160 | `runInit()` huh interactive wizard, `runInitBare()` JSON mode, `scaffoldWithConfig()` |
+| `cmd/pretty-converter/watch.go` | ~140 | `runWatch()` fsnotify recursive watcher with debounce + stats |
+| `cmd/pretty-converter/output/styles.go` | ~120 | Lipgloss styles: colors, symbols, Panel/Success/Error/Warn/Info helpers, `NoColor()` |
+| `cmd/pretty-converter/output/spinner.go` | ~60 | Animated goroutine spinner with `ack` channel sync |
+| `cmd/pretty-converter/output/banner.go` | ~30 | ASCII art "GO → PDF" banner |
+| `cmd/pretty-converter/output/panels.go` | ~110 | `BuildStats`, `PrintBuildSummary`, `PrintValidationSummary`, `PreFlightResult`, `PrintPreFlight` |
+| `cmd/pretty-converter/output/progress.go` | ~165 | `PipelineProgress` (Start/Done/Fail/Skip/PrintSummary), `WatchStats`, `PrintWatchBanner/Rebuild/Summary` |
+| `cmd/pretty-converter/initassets/*` | 4 files | Scaffold templates for `init` command |
 | `pdf.go` | ~220 | Root API, 18 options, Build/Validate pipeline, step-by-step methods, WithComponent fix |
 | `version/version.go` | 3 | Canonical version string `var Version = "0.1.0"` |
 | `scripts/bump/bump.go` | ~65 | SemVer bump script (patch/minor/major), reads/writes version/version.go |
@@ -472,7 +472,7 @@ go test ./config/... -v          # Config defaults (1), Load (1), partial defaul
 | `compose/assets/print.css` | 277 | Default print CSS (go:embed) |
 | `render/render.go` | 126 | Chrome headless PDF render |
 | `theme/theme.go` | 87 | Theme struct, Default & Minimal |
-| `examples/full-demo/go-pretty-pdf.yml` | 35 | Full demo config with all sections including CSS+template refs |
+| `examples/full-demo/go-pretty-converter.yml` | 35 | Full demo config with all sections including CSS+template refs |
 | `examples/full-demo/custom.css` | 208 | Demo custom CSS (dark cover, blue accents, code dark mode) |
 | `examples/full-demo/custom-template.html` | 30 | Demo custom template (minimal, dark cover) |
 | `examples/full-demo/*.mdx` | 4 files | Demo content exercising vars, components, frontmatter |
@@ -512,11 +512,11 @@ gopkg.in/yaml.v3                          YAML config file parsing
 8. **Config without CSS/Template fields** → uses embedded assets or theme
 9. **Source default** is `"book"` (not CWD) — aligns with `init` scaffold
 10. **Spinner deadlock fixed**: `Done()`/`Fail()` used `<-s.result` but goroutine never sent. Replaced with `ack` channel — goroutine closes `ack` on exit (via defer), `Done`/`Fail` wait on `<-s.ack` before printing
-11. **`.gitignore` `pretty-pdf` pattern** was too broad (matched `cmd/pretty-pdf/` dir). Fixed to `/pretty-pdf` (root-anchored only)
+11. **`.gitignore` `pretty-converter` pattern** was too broad (matched `cmd/pretty-converter/` dir). Fixed to `/pretty-converter` (root-anchored only)
 12. **Pre-flight order**: Chrome check first (hard failure), then source/output/CSS/template (warnings can pass)
 13. **Partial parsing**: `ParseDir`/`ParseAll` never abort on per-file errors. Returns partial docs + `ParseErrors`. Caller decides whether to continue. Frontmatter-not-found logged as debug-level, not error
 14. **Watch mode debounce**: 300ms debounce via `time.AfterFunc`. Subsequent events within window reset the timer. Prevents double-builds on editor save (fsnotify fires multiple events per save)
-15. **Version canonical source**: `version/version.go` (not a `var` in `main.go`). All ldflags target `github.com/sazardev/go-pretty-pdf/version.Version`. Update via `make bump-patch|minor|major`.
+15. **Version canonical source**: `version/version.go` (not a `var` in `main.go`). All ldflags target `github.com/sazardev/go-pretty-converter/version.Version`. Update via `make bump-patch|minor|major`.
 16. **Makefile is cross-platform**: Since v0.1.0, `make build` automatically appends `.exe` on Windows. Uses `$(GOOS)` detection.
 17. **Bump script reads version file**: `scripts/bump/bump.go` parses `version/version.go` via regex, bumps, writes back. Called by Makefile bump targets.
 18. **Docs workflow deploys to gh-pages**: `.github/workflows/docs.yml` builds both demo PDFs (library + CLI) and deploys to GitHub Pages with an index.html landing page.
@@ -530,7 +530,7 @@ gopkg.in/yaml.v3                          YAML config file parsing
 | `LICENSE` | MIT license |
 | `README.md` | Full docs — badges, install, CLI usage, library API, config reference |
 | `CHANGELOG.md` | Keep a Changelog format, v0.1.0 initial |
-| `doc.go` | Package doc (package `prettypdf`) for pkg.go.dev |
+| `doc.go` | Package doc (package `prettyconverter`) for pkg.go.dev |
 | `CONTRIBUTING.md` | Dev setup, conventions, commit style |
 | `SECURITY.md` | Vulnerability reporting policy |
 
@@ -566,7 +566,7 @@ tag v* → test (matrix, with -race) → goreleaser (linux/darwin/windows amd64+
 push to main → build library demo PDF → build full-demo CLI PDF → create index.html → deploy to gh-pages
 ```
 
-Hosted at: `https://sazardev.github.io/go-pretty-pdf/`
+Hosted at: `https://sazardev.github.io/go-pretty-converter/`
 Uploads: `library-demo.pdf`, `full-demo.pdf`, `index.html`
 
 ### Linters (`./golangci.yml`)
@@ -576,7 +576,7 @@ Uploads: `library-demo.pdf`, `full-demo.pdf`, `index.html`
 ### Release Automation (`./goreleaser.yml`)
 
 - Builds: linux (amd64/arm64), darwin (amd64/arm64), windows (amd64)
-- ldflags: `-X github.com/sazardev/go-pretty-pdf/version.Version={{ .Version }}`
+- ldflags: `-X github.com/sazardev/go-pretty-converter/version.Version={{ .Version }}`
 - Archives: `tar.gz` (unix), `zip` (windows)
 - Changelog: auto, excludes docs/test/chore/merge
 - Checksums: `checksums.txt`
@@ -593,7 +593,7 @@ Uploads: `library-demo.pdf`, `full-demo.pdf`, `index.html`
 | `make test` | `go test -race ./...` |
 | `make test-verbose` | `go test -race -v ./...` |
 | `make test-cover` | test + HTML coverage report + func summary |
-| `make build` | build `bin/pretty-pdf` with version (cross-platform: auto `.exe` on Windows) |
+| `make build` | build `bin/pretty-converter` with version (cross-platform: auto `.exe` on Windows) |
 | `make build-release` | stripped build |
 | `make install` | `go install` with ldflags → `$GOPATH/bin` |
 | `make version-info` | Print current version |
@@ -606,7 +606,7 @@ Uploads: `library-demo.pdf`, `full-demo.pdf`, `index.html`
 ### Version Injection
 
 Canonical source: `version/version.go` → `var Version = "0.1.0"`
-Overridden at build via: `-ldflags "-X github.com/sazardev/go-pretty-pdf/version.Version=<version>"`
+Overridden at build via: `-ldflags "-X github.com/sazardev/go-pretty-converter/version.Version=<version>"`
 
 Works in:
 - GitHub Actions CI (`go build -ldflags="-s -w"`)
@@ -623,4 +623,4 @@ Added `bin/`, `coverage.out`, `coverage.html`, `examples/full-demo/out.pdf`, `ex
 
 ### Removed Files (cleanup)
 
-`-p/` (empty dir), `pretty-pdf.exe` (binary in root), `.ignore` (empty), `skills-lock.json` (not standard)
+`-p/` (empty dir), `pretty-converter.exe` (binary in root), `.ignore` (empty), `skills-lock.json` (not standard)

@@ -1,6 +1,6 @@
 # Benchmarks
 
-Measured performance of `go-pretty-pdf` rendering real books, from a quick
+Measured performance of `go-pretty-converter` rendering real books, from a quick
 validation pass to a 3,535-page PDF. Every number below comes from a single
 end-to-end CLI invocation — parse, validate, transpile, compose, render
 (headless Chrome), and the automatic quality audit are all included in the
@@ -42,7 +42,7 @@ books are best split into per-chapter PDFs.
    frontmatter, and default options — the same code path as a real project.
 2. For each book size it runs three real invocations, sampling the whole
    process tree (CLI + Chrome children) for peak RSS and CPU every ~80 ms:
-   `pretty-pdf check`, `pretty-pdf epub`, and `pretty-pdf build`.
+   `pretty-converter check`, `pretty-converter epub`, and `pretty-converter build`.
 3. Wall time is measured process-wide; PDF pages are counted from the
    produced file; throughput is pages per wall second.
 
@@ -50,7 +50,7 @@ books are best split into per-chapter PDFs.
 
 ```bash
 # system Chrome is auto-detected; pass --chrome-path if needed
-PRETTY_PDF_CHROME_PATH=/usr/bin/chromium go run ./scripts/benchmark --color=false
+PRETTY_CONVERTER_CHROME_PATH=/usr/bin/chromium go run ./scripts/benchmark --color=false
 ```
 
 Flags: `--sizes 100,500,1000` (default `100,500,1000,2000,max`), `--max 3000`

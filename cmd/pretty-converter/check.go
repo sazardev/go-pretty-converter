@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 func runCheck(cmd *cobra.Command, args []string) error {

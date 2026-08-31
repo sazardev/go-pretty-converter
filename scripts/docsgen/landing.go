@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 //go:embed assets/landing.css
@@ -17,12 +17,12 @@ var landingJS string
 
 // landingDefaultTheme is the theme the marketing page previews before a
 // visitor touches the theme switcher — the "default" theme, matching the
-// theme a fresh `pretty-pdf build` produces out of the box.
+// theme a fresh `pretty-converter build` produces out of the box.
 const landingDefaultTheme = theme.NameDefault
 
 // landingThemeCSS builds one [data-theme="x"] { --bg: ...; } block per
 // builtin theme, read straight from theme.List() — the exact same palette
-// data go-pretty-pdf renders into a real PDF, never a hand-copied hex code.
+// data go-pretty-converter renders into a real PDF, never a hand-copied hex code.
 //
 // The default theme's block is deliberately NOT also written as a combined
 // ":root, [data-theme=...]" selector: :root matches the <html> element
@@ -163,10 +163,10 @@ func buildLandingHTML() string {
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="application-name" content="go-pretty-pdf">
+<meta name="application-name" content="go-pretty-converter">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="go-pretty-pdf">
+<meta property="og:site_name" content="go-pretty-converter">
 <meta property="og:title" content="%s">
 <meta property="og:description" content="%s">
 <meta property="og:url" content="%s">
@@ -177,14 +177,14 @@ func buildLandingHTML() string {
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="go-pretty-pdf — write Markdown, ship a beautiful PDF.">
+<meta property="og:image:alt" content="go-pretty-converter — write Markdown, ship an audited PDF, EPUB, and Kindle book.">
 <meta property="og:updated_time" content="%s">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%s">
 <meta name="twitter:description" content="%s">
 <meta name="twitter:image" content="%sog-image.png">
-<meta name="twitter:image:alt" content="go-pretty-pdf — write Markdown, ship a beautiful PDF.">
+<meta name="twitter:image:alt" content="go-pretty-converter — write Markdown, ship an audited PDF, EPUB, and Kindle book.">
 <meta name="twitter:site" content="@sazardev">
 <meta name="twitter:creator" content="@sazardev">
 <meta name="twitter:domain" content="%s">
@@ -210,15 +210,16 @@ func buildLandingHTML() string {
 <section class="hero">
   <div class="container">
     <p class="eyebrow"><b>go</b> &middot; CLI + library</p>
-    <h1 class="headline">Write Markdown.<br>Ship a beautiful <em>PDF.</em></h1>
+    <h1 class="headline">Write Markdown.<br>Ship an audited <em>book.</em></h1>
     <p class="sub">
-      <code>pretty-pdf</code> turns a folder of Markdown into a typeset, print-ready PDF &mdash; or EPUB &mdash;
-      via headless Chrome. No LaTeX, no design tools, nothing to install but a binary.
+      <code>pretty-converter</code> turns a folder of Markdown into a PDF, EPUB, and Kindle book via headless Chrome
+      &mdash; then audits the result for overflow, broken links, and low-contrast text before you ship.
+      No LaTeX, no design tools, nothing to install but a binary.
     </p>
     <div class="cta-row">
       <div class="install-line">
         <span class="prompt">$</span>
-        <code>go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest</code>
+        <code>go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest</code>
         <button class="copy-btn" id="copyInstall" aria-label="Copy install command">%s</button>
       </div>
       <a href="docs.html" class="text-cta">Read the docs &rarr;</a>
@@ -227,7 +228,7 @@ func buildLandingHTML() string {
     <div class="terminal">
       <div class="terminal-bar">
         <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
-        <span class="terminal-title">book/ &mdash; pretty-pdf build</span>
+        <span class="terminal-title">book/ &mdash; pretty-converter build</span>
       </div>
       <div class="terminal-body" id="termBody"></div>
     </div>
@@ -262,10 +263,10 @@ func buildLandingHTML() string {
       </div>
       <div class="step">
         <p class="step-num">03 &mdash; Ship</p>
-        <h3>One command, two formats</h3>
-        <p>A quality audit checks for overflow, broken images, and clipped headings before you ever open the file.</p>
-        <pre><span class="c">$</span> pretty-pdf build \
-    --format pdf,epub</pre>
+        <h3>One command, three formats, audited</h3>
+        <p>Every build runs a quality audit &mdash; overflow, broken images, clipped headings &mdash; before you ever open the file.</p>
+        <pre><span class="c">$</span> pretty-converter build \
+    --format pdf,epub,kindle</pre>
       </div>
     </div>
   </div>
@@ -280,14 +281,17 @@ func buildLandingHTML() string {
     </div>
     <div class="feature-grid reveal">
       <div class="feature"><span class="fnum">01</span><h3>17 built-in themes</h3><p>From clean &amp; minimal to Gruvbox, LaTeX-style academic papers, and government letterhead.</p></div>
-      <div class="feature"><span class="fnum">02</span><h3>PDF + EPUB, one source</h3><p>Build both formats from the same Markdown in a single pass &mdash; no separate pipeline to maintain.</p></div>
+      <div class="feature"><span class="fnum">02</span><h3>PDF + EPUB + Kindle, one source</h3><p>Build all three formats from the same Markdown in a single pass &mdash; no separate pipeline to maintain.</p></div>
       <div class="feature"><span class="fnum">03</span><h3>Print-ready trim sizes</h3><p>6&times;9in, A5, or exact mm/in dimensions &mdash; the sizes real print-on-demand services expect.</p></div>
       <div class="feature"><span class="fnum">04</span><h3>Syntax highlighting</h3><p>Fenced code blocks are highlighted via Chroma, with a palette matched to your theme.</p></div>
       <div class="feature"><span class="fnum">05</span><h3>Auto TOC &amp; bookmarks</h3><p>Table of contents and PDF bookmarks are generated straight from your headings.</p></div>
-      <div class="feature"><span class="fnum">06</span><h3>Automatic quality audit</h3><p>Catches overflow, broken images, low-contrast text, and clipped headings before you do.</p></div>
+      <div class="feature"><span class="fnum">06</span><h3>Automatic quality audit</h3><p>Every render is checked for overflow, broken images, low-contrast text, and clipped headings &mdash; before you are.</p></div>
       <div class="feature"><span class="fnum">07</span><h3>Custom components</h3><p><code>&lt;DeepDive&gt;</code>, <code>&lt;Warning&gt;</code>, <code>&lt;Axiom&gt;</code> &mdash; or register your own in Go.</p></div>
       <div class="feature"><span class="fnum">08</span><h3>Live reload</h3><p><code>watch</code> and <code>serve</code> rebuild on save, with the browser refreshing instantly.</p></div>
       <div class="feature"><span class="fnum">09</span><h3>Write however you want</h3><p>Even a stray <code>.txt</code> file gets folded in &mdash; auto-numbered, auto-titled, zero setup.</p></div>
+      <div class="feature"><span class="fnum">10</span><h3>Pre-build content analysis</h3><p><code>pretty-converter analyze</code> flags dead links, oversized tables, and skipped heading levels across every format &mdash; before you build anything.</p></div>
+      <div class="feature"><span class="fnum">11</span><h3>One config, every command</h3><p><code>go-pretty-converter.yml</code> sets source, theme, and metadata once &mdash; <code>build</code>, <code>epub</code>, <code>kindle</code>, <code>check</code>, and <code>analyze</code> all read the same file.</p></div>
+      <div class="feature"><span class="fnum">12</span><h3>CI-friendly by default</h3><p><code>--json</code> output on <code>build</code>/<code>analyze</code>, and meaningful exit codes throughout &mdash; <code>--strict</code> promotes warnings to failures for release gates.</p></div>
     </div>
   </div>
 </section>
@@ -300,14 +304,16 @@ func buildLandingHTML() string {
       <p>The whole tool is one binary with a handful of commands — everything below works on Linux, macOS, and Windows.</p>
     </div>
     <div class="cmd-grid reveal">
-      <div class="cmd"><code>pretty-pdf init my-book</code><span>Scaffold a book: skeleton MDX + config.</span></div>
-      <div class="cmd"><code>pretty-pdf build</code><span>Render a print-ready PDF (and EPUB with --format pdf,epub).</span></div>
-      <div class="cmd"><code>pretty-pdf check</code><span>Validate source only — no Chrome needed.</span></div>
-      <div class="cmd"><code>pretty-pdf epub</code><span>Build an EPUB 3, no Chrome required.</span></div>
-      <div class="cmd"><code>pretty-pdf serve</code><span>Live HTML preview with live reload.</span></div>
-      <div class="cmd"><code>pretty-pdf watch</code><span>Rebuild the PDF on every save.</span></div>
-      <div class="cmd"><code>pretty-pdf theme list</code><span>Browse 17 built-in themes or add your own.</span></div>
-      <div class="cmd"><code>pretty-pdf completion</code><span>Shell completions for bash, zsh, fish.</span></div>
+      <div class="cmd"><code>pretty-converter init my-book</code><span>Scaffold a book: skeleton MDX + config.</span></div>
+      <div class="cmd"><code>pretty-converter analyze</code><span>Flag cross-format rendering issues — no Chrome/Calibre needed.</span></div>
+      <div class="cmd"><code>pretty-converter build</code><span>Render PDF, EPUB, and/or Kindle (--format pdf,epub,kindle).</span></div>
+      <div class="cmd"><code>pretty-converter check</code><span>Validate source only — no Chrome needed.</span></div>
+      <div class="cmd"><code>pretty-converter epub</code><span>Build an EPUB 3, no Chrome required.</span></div>
+      <div class="cmd"><code>pretty-converter kindle</code><span>Build a Kindle MOBI/AZW3 via Calibre's ebook-convert.</span></div>
+      <div class="cmd"><code>pretty-converter serve</code><span>Live HTML preview with live reload.</span></div>
+      <div class="cmd"><code>pretty-converter watch</code><span>Rebuild the PDF on every save.</span></div>
+      <div class="cmd"><code>pretty-converter theme list</code><span>Browse 17 built-in themes or add your own.</span></div>
+      <div class="cmd"><code>pretty-converter completion</code><span>Shell completions for bash, zsh, fish.</span></div>
     </div>
     <p class="cmd-more"><a href="docs.html#cli-reference" class="text-cta">Full CLI reference &rarr;</a></p>
   </div>
@@ -329,20 +335,21 @@ func buildLandingHTML() string {
 <section id="compare">
   <div class="container">
     <div class="section-head center reveal">
-      <p class="kicker">Why not LaTeX?</p>
-      <h2>Typesetting without the tradeoffs.</h2>
+      <p class="kicker">The comparison</p>
+      <h2>Same Markdown. A different toolchain.</h2>
     </div>
     <div class="reveal" style="overflow-x:auto">
       <table class="compare">
         <thead>
-          <tr><th>&nbsp;</th><th>LaTeX</th><th>Design app</th><th class="hl">pretty-pdf</th></tr>
+          <tr><th>&nbsp;</th><th>LaTeX</th><th>Other MD&rarr;PDF tools</th><th class="hl">pretty-converter</th></tr>
         </thead>
         <tbody>
-          <tr><td class="row-label">Plain text, git-diffable</td><td class="yes">Yes</td><td class="no">&mdash;</td><td class="hl">Yes</td></tr>
-          <tr><td class="row-label">Runs headless in CI</td><td class="yes">Yes</td><td class="no">&mdash;</td><td class="hl">Yes</td></tr>
-          <tr><td class="row-label">Learning curve</td><td class="no">Steep</td><td class="no">Software-specific</td><td class="hl">Just Markdown</td></tr>
-          <tr><td class="row-label">Print-ready trim sizes</td><td class="yes">Manual</td><td class="yes">Manual</td><td class="hl">Built in</td></tr>
-          <tr><td class="row-label">Free &amp; open source</td><td class="yes">Yes</td><td class="no">Usually not</td><td class="hl">MIT licensed</td></tr>
+          <tr><td class="row-label">Automatic quality audit (overflow, contrast, broken links)</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="hl">Yes</td></tr>
+          <tr><td class="row-label">PDF + EPUB + Kindle from one source</td><td class="no">&mdash;</td><td class="no">Rarely all three</td><td class="hl">Yes</td></tr>
+          <tr><td class="row-label">Runs headless in CI</td><td class="yes">Yes</td><td class="no">Varies</td><td class="hl">Yes</td></tr>
+          <tr><td class="row-label">Learning curve</td><td class="no">Steep</td><td class="no">Varies by tool</td><td class="hl">Just Markdown</td></tr>
+          <tr><td class="row-label">Print-ready trim sizes</td><td class="yes">Manual</td><td class="no">Rare</td><td class="hl">Built in</td></tr>
+          <tr><td class="row-label">Free &amp; open source</td><td class="yes">Yes</td><td class="yes">Mostly</td><td class="hl">MIT licensed</td></tr>
         </tbody>
       </table>
     </div>
@@ -376,8 +383,8 @@ func buildLandingHTML() string {
   <div class="container">
     <div class="stats-grid reveal">
       <div class="stat"><span class="stat-num">17</span><span class="stat-label">built-in themes</span></div>
-      <div class="stat"><span class="stat-num">2</span><span class="stat-label">output formats</span></div>
-      <div class="stat"><span class="stat-num">0</span><span class="stat-label">LaTeX or design tools</span></div>
+      <div class="stat"><span class="stat-num">3</span><span class="stat-label">output formats, one source</span></div>
+      <div class="stat"><span class="stat-num">30+</span><span class="stat-label">automated quality checks</span></div>
       <div class="stat"><span class="stat-num">100%%</span><span class="stat-label">free &amp; MIT licensed</span></div>
     </div>
   </div>
@@ -388,12 +395,16 @@ func buildLandingHTML() string {
     <div class="section-head center reveal">
       <p class="kicker">FAQ</p>
       <h2>Frequently asked questions</h2>
-      <p>Straight answers about how go-pretty-pdf works, what it needs, and what it can build.</p>
+      <p>Straight answers about how go-pretty-converter works, what it needs, and what it can build.</p>
     </div>
     <div class="faq-grid reveal">
       <details class="faq-item">
-        <summary>Does go-pretty-pdf require LaTeX?</summary>
+        <summary>Does go-pretty-converter require LaTeX?</summary>
         <p>No. PDFs are rendered from Markdown/MDX via headless Chrome &mdash; no LaTeX, no separate design tool, nothing to install but the binary.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What makes go-pretty-converter different from Pandoc, mdBook, or other Markdown tools?</summary>
+        <p>The quality audit. Most Markdown&rarr;PDF tools convert and stop; go-pretty-converter converts, then automatically checks the result for overflow, broken links, low-contrast text, and clipped headings &mdash; before you ever open the file. Pair that with one Markdown source building PDF, EPUB, and Kindle alike, and it's the only toolchain in the category that does all three.</p>
       </details>
       <details class="faq-item">
         <summary>Does it require a manual Chrome install?</summary>
@@ -404,6 +415,10 @@ func buildLandingHTML() string {
         <p>Yes. The <code>epub</code> command builds EPUB 3 output from the same Markdown with no Chrome or Chromium required.</p>
       </details>
       <details class="faq-item">
+        <summary>Do I need Chrome for Kindle output too?</summary>
+        <p>No. <code>pretty-converter kindle</code> builds the same EPUB with no Chrome required, then converts it to MOBI/AZW3 with Calibre's <code>ebook-convert</code> &mdash; install Calibre separately and it's picked up from <code>PATH</code>, or point <code>--calibre-path</code> at it.</p>
+      </details>
+      <details class="faq-item">
         <summary>What input file formats are supported?</summary>
         <p><code>.md</code>, <code>.mdx</code>, and even bare <code>.txt</code> files. Documents are ordered by their <code>[X.Y.Z]</code> frontmatter id, not by filename.</p>
       </details>
@@ -412,15 +427,19 @@ func buildLandingHTML() string {
         <p>17 themes &mdash; from minimal and modern to Gruvbox, LaTeX-style academic, corporate, and government letterhead &mdash; plus a custom <code>.theme.yml</code> system and per-theme color/font overrides.</p>
       </details>
       <details class="faq-item">
-        <summary>Can I build PDF and EPUB from one source?</summary>
-        <p>Yes. A single command (<code>--format pdf,epub</code>) builds both from the same Markdown in one pass &mdash; no separate pipeline.</p>
+        <summary>Can I build PDF, EPUB, and Kindle from one source?</summary>
+        <p>Yes. A single command (<code>--format pdf,epub,kindle</code>) builds all three from the same Markdown in one pass &mdash; no separate pipeline to maintain.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does <code>pretty-converter analyze</code> check?</summary>
+        <p>Content patterns that render poorly across formats &mdash; broken internal links, missing local images, tables too wide for Kindle, skipped heading levels, overlong code lines, and more &mdash; graded as errors, warnings, or improvements. It runs statically, before any build, with no Chrome or Calibre required.</p>
       </details>
       <details class="faq-item">
         <summary>Is it fast on big books?</summary>
         <p>Yes. A 3,000-document book validates in 142 ms and renders a 3,535-page PDF in ~23 s on a mid-range i5. The Go-side pipeline stays sub-second at every size &mdash; see <a href="%s">BENCHMARKS.md</a> for the reproducible methodology.</p>
       </details>
       <details class="faq-item">
-        <summary>Is go-pretty-pdf free?</summary>
+        <summary>Is go-pretty-converter free?</summary>
         <p>Yes &mdash; MIT licensed, open source, no paid tier. Every feature ships in the core binary.</p>
       </details>
     </div>
@@ -437,7 +456,7 @@ func buildLandingHTML() string {
       <div class="cta-row" style="margin-bottom:0">
         <div class="install-line">
           <span class="prompt">$</span>
-          <code>pretty-pdf init my-book</code>
+          <code>pretty-converter init my-book</code>
           <button class="copy-btn" id="copyInit" aria-label="Copy init command">%s</button>
         </div>
         <a href="%s" class="text-cta" target="_blank" rel="noopener">View on GitHub &rarr;</a>
@@ -449,14 +468,14 @@ func buildLandingHTML() string {
     <div class="footer-grid">
       <div class="footer-col footer-brand">
         <a href="index.html" class="brand">pretty<span class="dim">-pdf</span></a>
-        <p>A Go library and CLI that turns Markdown into print-ready PDFs and EPUBs. MIT licensed.</p>
+        <p>A Go library and CLI that turns Markdown into audited, print-ready PDF, EPUB, and Kindle books. MIT licensed.</p>
       </div>
       <div class="footer-col"><h4>Product</h4><a href="#themes">Themes</a><a href="#features">Features</a><a href="docs.html#changelog">Changelog</a></div>
       <div class="footer-col"><h4>Docs</h4><a href="docs.html#cli-reference">CLI reference</a><a href="docs.html#mdx-format">MDX format</a><a href="%s/blob/master/SECURITY.md">Security</a></div>
       <div class="footer-col"><h4>Community</h4><a href="%s">GitHub</a><a href="%s/issues">Issues</a><a href="%s/discussions">Discussions</a></div>
     </div>
     <div class="footer-bottom">
-      <span>&copy; 2026 go-pretty-pdf &mdash; MIT License</span>
+      <span>&copy; 2026 go-pretty-converter &mdash; MIT License</span>
       <span>Built with Go, headless Chrome, and too many themes</span>
     </div>
   </div>

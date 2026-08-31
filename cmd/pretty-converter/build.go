@@ -11,13 +11,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/chromemgr"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/config"
-	"github.com/sazardev/go-pretty-pdf/kindle"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/version"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/chromemgr"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/config"
+	"github.com/sazardev/go-pretty-converter/kindle"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/version"
 )
 
 func runBuild(cmd *cobra.Command, args []string) error {
@@ -34,7 +34,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	formats, err := prettypdf.ParseFormats(formatStr)
+	formats, err := prettyconverter.ParseFormats(formatStr)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	var chromeErr error
 	needsChrome := false
 	for _, f := range formats {
-		if f == prettypdf.FormatPDF {
+		if f == prettyconverter.FormatPDF {
 			needsChrome = true
 			break
 		}
@@ -60,7 +60,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	var calibreErr error
 	needsCalibre := false
 	for _, f := range formats {
-		if f == prettypdf.FormatKindle {
+		if f == prettyconverter.FormatKindle {
 			needsCalibre = true
 			break
 		}
@@ -102,11 +102,11 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	pipeline.Start("Parsing MDX files...")
 	opts := buildOpts(cfg, chromeExecPath, calibreExecPath)
-	opts = append(opts, prettypdf.WithFormats(formats...))
+	opts = append(opts, prettyconverter.WithFormats(formats...))
 	if buildLanguage != "" {
-		opts = append(opts, prettypdf.WithEpubLanguage(buildLanguage))
+		opts = append(opts, prettyconverter.WithEpubLanguage(buildLanguage))
 	}
-	pdf, err := prettypdf.New(opts...)
+	pdf, err := prettyconverter.New(opts...)
 	if err != nil {
 		pipeline.Fail("Parsing MDX files...", err.Error())
 		return fmt.Errorf("initializing: %w", err)
@@ -147,8 +147,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	for _, f := range formats {
 		switch f {
-		case prettypdf.FormatPDF:
-			pdfPath := outputPaths[prettypdf.FormatPDF]
+		case prettyconverter.FormatPDF:
+			pdfPath := outputPaths[prettyconverter.FormatPDF]
 			pipeline.Start("Composing HTML...")
 			html, err := pdf.ComposeHTML(docs)
 			if err != nil {
@@ -158,7 +158,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			pipeline.Done("Composing HTML...")
 
 			pipeline.Start("Rendering PDF...")
-			pdfOpt := prettypdf.WithOutputFile(pdfPath)
+			pdfOpt := prettyconverter.WithOutputFile(pdfPath)
 			pdfOpt(pdf)
 			if err := pdf.RenderWithContext(cmd.Context(), html); err != nil {
 				pipeline.Fail("Rendering PDF...", err.Error())
@@ -166,8 +166,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			}
 			pipeline.Done("Rendering PDF...")
 
-		case prettypdf.FormatEPUB:
-			epubPath := outputPaths[prettypdf.FormatEPUB]
+		case prettyconverter.FormatEPUB:
+			epubPath := outputPaths[prettyconverter.FormatEPUB]
 			pipeline.Start("Writing EPUB...")
 			if err := pdf.RenderEpub(docs, epubPath); err != nil {
 				pipeline.Fail("Writing EPUB...", err.Error())
@@ -175,8 +175,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			}
 			pipeline.Done("Writing EPUB...")
 
-		case prettypdf.FormatKindle:
-			kindlePath := outputPaths[prettypdf.FormatKindle]
+		case prettyconverter.FormatKindle:
+			kindlePath := outputPaths[prettyconverter.FormatKindle]
 			pipeline.Start("Converting to Kindle format...")
 			if err := pdf.RenderKindle(cmd.Context(), docs, kindlePath); err != nil {
 				pipeline.Fail("Converting to Kindle format...", err.Error())
@@ -254,7 +254,7 @@ func runBuildJSON(cmd *cobra.Command) error {
 		return err
 	}
 
-	formats, err := prettypdf.ParseFormats(formatStr)
+	formats, err := prettyconverter.ParseFormats(formatStr)
 	if err != nil {
 		return err
 	}
@@ -263,7 +263,7 @@ func runBuildJSON(cmd *cobra.Command) error {
 
 	needsChrome := false
 	for _, f := range formats {
-		if f == prettypdf.FormatPDF {
+		if f == prettyconverter.FormatPDF {
 			needsChrome = true
 			break
 		}
@@ -279,7 +279,7 @@ func runBuildJSON(cmd *cobra.Command) error {
 
 	needsCalibre := false
 	for _, f := range formats {
-		if f == prettypdf.FormatKindle {
+		if f == prettyconverter.FormatKindle {
 			needsCalibre = true
 			break
 		}
@@ -294,11 +294,11 @@ func runBuildJSON(cmd *cobra.Command) error {
 	}
 
 	opts := buildOpts(cfg, chromeExecPath, calibreExecPath)
-	opts = append(opts, prettypdf.WithFormats(formats...))
+	opts = append(opts, prettyconverter.WithFormats(formats...))
 	if buildLanguage != "" {
-		opts = append(opts, prettypdf.WithEpubLanguage(buildLanguage))
+		opts = append(opts, prettyconverter.WithEpubLanguage(buildLanguage))
 	}
-	pdf, err := prettypdf.New(opts...)
+	pdf, err := prettyconverter.New(opts...)
 	if err != nil {
 		return err
 	}
@@ -331,24 +331,24 @@ func runBuildJSON(cmd *cobra.Command) error {
 
 	for _, f := range formats {
 		switch f {
-		case prettypdf.FormatPDF:
-			pdfPath := outputPaths[prettypdf.FormatPDF]
+		case prettyconverter.FormatPDF:
+			pdfPath := outputPaths[prettyconverter.FormatPDF]
 			html, composeErr := pdf.ComposeHTML(docs)
 			if composeErr != nil {
 				return fmt.Errorf("composing HTML: %w", composeErr)
 			}
-			pdfOpt := prettypdf.WithOutputFile(pdfPath)
+			pdfOpt := prettyconverter.WithOutputFile(pdfPath)
 			pdfOpt(pdf)
 			if composeErr = pdf.RenderWithContext(cmd.Context(), html); composeErr != nil {
 				return fmt.Errorf("rendering PDF: %w", composeErr)
 			}
-		case prettypdf.FormatEPUB:
-			epubPath := outputPaths[prettypdf.FormatEPUB]
+		case prettyconverter.FormatEPUB:
+			epubPath := outputPaths[prettyconverter.FormatEPUB]
 			if epubErr := pdf.RenderEpub(docs, epubPath); epubErr != nil {
 				return fmt.Errorf("writing EPUB: %w", epubErr)
 			}
-		case prettypdf.FormatKindle:
-			kindlePath := outputPaths[prettypdf.FormatKindle]
+		case prettyconverter.FormatKindle:
+			kindlePath := outputPaths[prettyconverter.FormatKindle]
 			if kindleErr := pdf.RenderKindle(cmd.Context(), docs, kindlePath); kindleErr != nil {
 				return fmt.Errorf("writing Kindle file: %w", kindleErr)
 			}
@@ -423,7 +423,7 @@ func resolveChromePath() (string, error) {
 	return path, nil
 }
 
-func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, needsChrome bool, calibreErr error, needsCalibre bool, outputPaths map[prettypdf.OutputFormat]string) []output.PreFlightResult {
+func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, needsChrome bool, calibreErr error, needsCalibre bool, outputPaths map[prettyconverter.OutputFormat]string) []output.PreFlightResult {
 	var results []output.PreFlightResult
 
 	if needsChrome {
@@ -561,8 +561,8 @@ func runPreFlight(cfg *config.Config, chromeExecPath string, chromeErr error, ne
 	return results
 }
 
-func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[prettypdf.OutputFormat]string {
-	paths := make(map[prettypdf.OutputFormat]string)
+func resolveOutputPaths(out string, formats []prettyconverter.OutputFormat) map[prettyconverter.OutputFormat]string {
+	paths := make(map[prettyconverter.OutputFormat]string)
 	ext := strings.ToLower(filepath.Ext(out))
 
 	switch ext {
@@ -570,11 +570,11 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 		base := strings.TrimSuffix(out, ext)
 		for _, f := range formats {
 			switch f {
-			case prettypdf.FormatPDF:
+			case prettyconverter.FormatPDF:
 				paths[f] = out
-			case prettypdf.FormatEPUB:
+			case prettyconverter.FormatEPUB:
 				paths[f] = base + ".epub"
-			case prettypdf.FormatKindle:
+			case prettyconverter.FormatKindle:
 				paths[f] = base + ".mobi"
 			}
 		}
@@ -582,11 +582,11 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 		base := strings.TrimSuffix(out, ext)
 		for _, f := range formats {
 			switch f {
-			case prettypdf.FormatPDF:
+			case prettyconverter.FormatPDF:
 				paths[f] = base + ".pdf"
-			case prettypdf.FormatEPUB:
+			case prettyconverter.FormatEPUB:
 				paths[f] = out
-			case prettypdf.FormatKindle:
+			case prettyconverter.FormatKindle:
 				paths[f] = base + ".mobi"
 			}
 		}
@@ -594,22 +594,22 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 		base := strings.TrimSuffix(out, ext)
 		for _, f := range formats {
 			switch f {
-			case prettypdf.FormatPDF:
+			case prettyconverter.FormatPDF:
 				paths[f] = base + ".pdf"
-			case prettypdf.FormatEPUB:
+			case prettyconverter.FormatEPUB:
 				paths[f] = base + ".epub"
-			case prettypdf.FormatKindle:
+			case prettyconverter.FormatKindle:
 				paths[f] = out
 			}
 		}
 	default:
 		for _, f := range formats {
 			switch f {
-			case prettypdf.FormatPDF:
+			case prettyconverter.FormatPDF:
 				paths[f] = out + ".pdf"
-			case prettypdf.FormatEPUB:
+			case prettyconverter.FormatEPUB:
 				paths[f] = out + ".epub"
-			case prettypdf.FormatKindle:
+			case prettyconverter.FormatKindle:
 				paths[f] = out + ".mobi"
 			}
 		}
@@ -618,25 +618,25 @@ func resolveOutputPaths(out string, formats []prettypdf.OutputFormat) map[pretty
 	return paths
 }
 
-func buildStepNames(formats []prettypdf.OutputFormat) []string {
+func buildStepNames(formats []prettyconverter.OutputFormat) []string {
 	steps := []string{
 		"Parsing MDX files...",
 		"Running validation...",
 	}
 	for _, f := range formats {
 		switch f {
-		case prettypdf.FormatPDF:
+		case prettyconverter.FormatPDF:
 			steps = append(steps, "Composing HTML...", "Rendering PDF...")
-		case prettypdf.FormatEPUB:
+		case prettyconverter.FormatEPUB:
 			steps = append(steps, "Writing EPUB...")
-		case prettypdf.FormatKindle:
+		case prettyconverter.FormatKindle:
 			steps = append(steps, "Converting to Kindle format...")
 		}
 	}
 	return steps
 }
 
-func formatLabel(formats []prettypdf.OutputFormat) string {
+func formatLabel(formats []prettyconverter.OutputFormat) string {
 	labels := make([]string, len(formats))
 	for i, f := range formats {
 		labels[i] = string(f)

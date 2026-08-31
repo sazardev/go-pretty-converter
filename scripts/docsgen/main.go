@@ -33,17 +33,17 @@ var siteJS string
 var deployHeaders string
 
 const (
-	siteBaseURL     = "https://sazardev.github.io/go-pretty-pdf/"
+	siteBaseURL     = "https://sazardev.github.io/go-pretty-converter/"
 	siteHost        = "sazardev.github.io"
-	siteRepoURL     = "https://github.com/sazardev/go-pretty-pdf"
-	siteTitle       = "go-pretty-pdf — Turn Markdown into Beautiful, Print-Ready PDFs (Go)"
-	siteDescription = "Turn Markdown/MDX into a print-ready PDF via headless Chrome as a Go library or CLI. No LaTeX. A 3,000-doc book becomes a 3,535-page PDF in ~23 seconds."
-	siteKeywords    = "markdown to pdf, mdx to pdf, go pdf generator, golang pdf library, cli pdf generator, print-ready pdf, headless chrome pdf, markdown book generator, mdx renderer, fast pdf generator, markdown to pdf benchmark"
+	siteRepoURL     = "https://github.com/sazardev/go-pretty-converter"
+	siteTitle       = "go-pretty-converter — Markdown to PDF, EPUB & Kindle, Audited (Go)"
+	siteDescription = "Turn Markdown into an audited PDF, EPUB, and Kindle book via headless Chrome. Catches overflow, broken links, and low contrast before you ship — no LaTeX."
+	siteKeywords    = "markdown to pdf, markdown to epub, markdown to kindle, mdx to pdf, go pdf generator, golang pdf library, cli pdf generator, print-ready pdf, headless chrome pdf, markdown book generator, pdf quality audit, mdx renderer, markdown to mobi, fast pdf generator, markdown to pdf benchmark"
 )
 
 // siteName is the project display name, reused across metadata, EPUBs, and
 // generated markdown to avoid repeated string literals.
-const siteName = "go-pretty-pdf"
+const siteName = "go-pretty-converter"
 
 // sectionThemesTitle is the human-readable title of the Themes section,
 // shared by the docs section map, the FAQ/theme tables, and the appbar nav.
@@ -381,10 +381,10 @@ func heroSection() Section {
 	return Section{
 		ID:      heroSectionID,
 		Title:   siteName,
-		Eyebrow: "MDX &rarr; PDF, via headless Chrome",
+		Eyebrow: "MDX &rarr; PDF, EPUB &amp; Kindle &mdash; audited",
 		Content: `<pre class="hero-ascii">` + ascii + `</pre>
 <div class="hero-line"></div>
-<p class="hero-tagline">Turn a folder of MDX into a beautifully typeset, print-ready PDF &mdash; no LaTeX, no design tools, no fuss.</p>
+<p class="hero-tagline">Turn a folder of MDX into a PDF, EPUB, and Kindle book &mdash; audited for overflow, broken links, and low contrast before you ship. No LaTeX, no design tools, no fuss.</p>
 <div class="hero-meta">
   <span>Library + CLI</span>
   <span>Go 1.26+</span>
@@ -392,23 +392,23 @@ func heroSection() Section {
 </div>
 <a class="download-pdf-btn" id="download-pdf-btn" href="` + docsPDFDefault + `" download>
   <span>Download these docs as a PDF</span>
-  <span class="download-pdf-sub" id="download-pdf-sub">in the Classic theme &mdash; rendered by go-pretty-pdf itself</span>
+  <span class="download-pdf-sub" id="download-pdf-sub">in the Classic theme &mdash; rendered by go-pretty-converter itself</span>
 </a>
 <div class="hero-install">
   <div class="install-block">
     <span class="install-label">CLI</span>
-    <pre class="install-cmd"><code>$ go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest</code></pre>
+    <pre class="install-cmd"><code>$ go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest</code></pre>
   </div>
   <div class="install-block">
     <span class="install-label">Library</span>
-    <pre class="install-cmd"><code>$ go get github.com/sazardev/go-pretty-pdf</code></pre>
+    <pre class="install-cmd"><code>$ go get github.com/sazardev/go-pretty-converter</code></pre>
   </div>
 </div>
 <p class="hero-requirements">
   Requires Chrome or Chromium for PDF rendering.
   <a href="#quick-start">Get started</a> &middot;
-  <a href="https://github.com/sazardev/go-pretty-pdf">GitHub</a> &middot;
-  <a href="https://pkg.go.dev/github.com/sazardev/go-pretty-pdf">pkg.go.dev</a>
+  <a href="https://github.com/sazardev/go-pretty-converter">GitHub</a> &middot;
+  <a href="https://pkg.go.dev/github.com/sazardev/go-pretty-converter">pkg.go.dev</a>
 </p>`,
 	}
 }
@@ -487,7 +487,7 @@ func cliSections(src []byte, md goldmark.Markdown) []Section {
 				if cmdLabel, ok := cmdMap[subID]; ok {
 					sections = append(sections, Section{
 						ID:      "cmd-" + subID,
-						Title:   "pretty-pdf " + cmdLabel,
+						Title:   "pretty-converter " + cmdLabel,
 						Content: sub.Body,
 					})
 				}
@@ -599,7 +599,7 @@ func breadcrumbJSONLD() string {
     {
       "@type": "ListItem",
       "position": 1,
-      "name": "go-pretty-pdf",
+      "name": "go-pretty-converter",
       "item": "` + siteBaseURL + `"
     },
     {
@@ -635,7 +635,7 @@ func buildDocsHTML(sections []Section) string {
 			s.ID, cls, eyebrow, headingTag, s.Title, headingTag, s.Content)
 	}
 
-	docsTitle := "go-pretty-pdf — CLI Reference, MDX Format & Changelog"
+	docsTitle := "go-pretty-converter — CLI Reference, MDX Format & Changelog"
 	docsURL := siteBaseURL + "docs.html"
 
 	return fmt.Sprintf(`<!DOCTYPE html>
@@ -664,10 +664,10 @@ func buildDocsHTML(sections []Section) string {
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="application-name" content="go-pretty-pdf">
+<meta name="application-name" content="go-pretty-converter">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="go-pretty-pdf">
+<meta property="og:site_name" content="go-pretty-converter">
 <meta property="og:title" content="%s">
 <meta property="og:description" content="%s">
 <meta property="og:url" content="%s">
@@ -678,13 +678,13 @@ func buildDocsHTML(sections []Section) string {
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="go-pretty-pdf — write Markdown, ship a book.">
+<meta property="og:image:alt" content="go-pretty-converter — write Markdown, ship a book.">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%s">
 <meta name="twitter:description" content="%s">
 <meta name="twitter:image" content="%sog-image.png">
-<meta name="twitter:image:alt" content="go-pretty-pdf — write Markdown, ship a book.">
+<meta name="twitter:image:alt" content="go-pretty-converter — write Markdown, ship a book.">
 
 <meta name="twitter:site" content="@sazardev">
 <meta name="twitter:creator" content="@sazardev">
@@ -724,7 +724,7 @@ func buildDocsHTML(sections []Section) string {
 <main class="main">
   %s
   <footer class="footer">
-    <p>Generated from source &mdash; <a href="https://github.com/sazardev/go-pretty-pdf">GitHub</a> &middot; <a href="https://pkg.go.dev/github.com/sazardev/go-pretty-pdf">pkg.go.dev</a></p>
+    <p>Generated from source &mdash; <a href="https://github.com/sazardev/go-pretty-converter">GitHub</a> &middot; <a href="https://pkg.go.dev/github.com/sazardev/go-pretty-converter">pkg.go.dev</a></p>
   </footer>
 </main>
 %s
@@ -748,7 +748,7 @@ func buildDocsHTML(sections []Section) string {
 // SoftwareApplication entry describing the CLI/library, an Organization
 // entry for the project itself, and (via faqJSONLD) rich results for the
 // landing page's FAQ. This is what lets search engines and LLM crawlers
-// identify go-pretty-pdf as a concrete, installable, open-source tool
+// identify go-pretty-converter as a concrete, installable, open-source tool
 // rather than just a prose page, and qualifies the landing page for FAQ
 // rich results.
 func jsonLD() string {
@@ -757,7 +757,7 @@ func jsonLD() string {
   "@graph": [
     {
       "@type": "Organization",
-      "name": "go-pretty-pdf",
+      "name": "go-pretty-converter",
       "url": "` + siteBaseURL + `",
       "logo": "` + siteBaseURL + `favicon.svg",
       "description": "` + siteDescription + `",
@@ -770,7 +770,7 @@ func jsonLD() string {
     },
     {
       "@type": "WebSite",
-      "name": "go-pretty-pdf",
+      "name": "go-pretty-converter",
       "url": "` + siteBaseURL + `",
       "description": "` + siteDescription + `",
       "inLanguage": "en",
@@ -782,7 +782,7 @@ func jsonLD() string {
     },
     {
       "@type": "SoftwareApplication",
-      "name": "go-pretty-pdf",
+      "name": "go-pretty-converter",
       "description": "` + siteDescription + `",
       "url": "` + siteBaseURL + `",
       "applicationCategory": "DeveloperApplication",
@@ -790,16 +790,17 @@ func jsonLD() string {
       "operatingSystem": "Linux, macOS, Windows",
       "programmingLanguage": "Go",
       "softwareVersion": "latest",
-      "requirements": "Go 1.26+; Chrome or Chromium for PDF rendering (auto-downloaded)",
+      "requirements": "Go 1.26+; Chrome or Chromium for PDF rendering (auto-downloaded); Calibre for Kindle output",
       "featureList": [
-        "Markdown/MDX to PDF and EPUB",
+        "Markdown/MDX to PDF, EPUB, and Kindle (MOBI/AZW3)",
+        "Automatic pre-render quality audit (overflow, contrast, broken links)",
+        "Static cross-format content analysis before building",
         "17 built-in print themes",
         "Headless Chrome rendering",
         "Automatic table of contents and PDF bookmarks",
         "Syntax highlighting via Chroma",
         "Print-ready trim sizes (6x9in, A5, mm/in)",
-        "Custom .theme.yml themes",
-        "Automatic quality audit"
+        "Custom .theme.yml themes"
       ],
       "license": "` + siteRepoURL + `/blob/master/LICENSE",
       "codeRepository": "` + siteRepoURL + `",
@@ -832,15 +833,23 @@ func faqJSONLD() string {
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Does go-pretty-pdf require LaTeX?",
+      "name": "Does go-pretty-converter require LaTeX?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. go-pretty-pdf renders PDFs from Markdown/MDX using headless Chrome — no LaTeX, no separate design tool, nothing to install but the binary."
+        "text": "No. go-pretty-converter renders PDFs from Markdown/MDX using headless Chrome — no LaTeX, no separate design tool, nothing to install but the binary."
       }
     },
     {
       "@type": "Question",
-      "name": "Does go-pretty-pdf require a manual Chrome install?",
+      "name": "What makes go-pretty-converter different from Pandoc, mdBook, or other Markdown tools?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The quality audit. Most Markdown-to-PDF tools convert and stop; go-pretty-converter converts, then automatically checks the result for overflow, broken links, low-contrast text, and clipped headings — before you ever open the file. Pair that with one Markdown source building PDF, EPUB, and Kindle alike, and it's the only toolchain in the category that does all three."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does go-pretty-converter require a manual Chrome install?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Usually not. On first render chromemgr auto-downloads a headless Chrome build if no system Chrome or --chrome-path is found. Only on linux/arm64 you must provide Chrome via --chrome-path."
@@ -856,6 +865,14 @@ func faqJSONLD() string {
     },
     {
       "@type": "Question",
+      "name": "Do I need Chrome for Kindle output too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. 'pretty-converter kindle' builds the same EPUB with no Chrome required, then converts it to MOBI/AZW3 with Calibre's ebook-convert — install Calibre separately and it's picked up from PATH, or point --calibre-path at it."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "What input file formats are supported?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -864,7 +881,7 @@ func faqJSONLD() string {
     },
     {
       "@type": "Question",
-      "name": "How many built-in themes does go-pretty-pdf ship?",
+      "name": "How many built-in themes does go-pretty-converter ship?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "17 built-in themes ranging from minimal and modern to Gruvbox, LaTeX-style academic, corporate, and government letterhead, plus a custom .theme.yml theme system and per-theme color/font overrides."
@@ -872,18 +889,34 @@ func faqJSONLD() string {
     },
     {
       "@type": "Question",
-      "name": "Can I build both PDF and EPUB from one source?",
+      "name": "Can I build PDF, EPUB, and Kindle from one source?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. A single command (--format pdf,epub) builds both formats from the same Markdown in one pass — no separate pipeline to maintain."
+        "text": "Yes. A single command (--format pdf,epub,kindle) builds all three formats from the same Markdown in one pass — no separate pipeline to maintain."
       }
     },
     {
       "@type": "Question",
-      "name": "Is go-pretty-pdf free?",
+      "name": "What does pretty-converter analyze check?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. go-pretty-pdf is MIT-licensed, open source, with no paid tier. Every feature ships in the core binary."
+        "text": "Content patterns that render poorly across formats — broken internal links, missing local images, tables too wide for Kindle, skipped heading levels, overlong code lines, and more — graded as errors, warnings, or improvements. It runs statically, before any build, with no Chrome or Calibre required."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it fast on big books?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. A 3,000-document book validates in 142 ms and renders a 3,535-page PDF in ~23 s on a mid-range i5. The Go-side pipeline stays sub-second at every size."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is go-pretty-converter free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. go-pretty-converter is MIT-licensed, open source, with no paid tier. Every feature ships in the core binary."
       }
     }
   ]

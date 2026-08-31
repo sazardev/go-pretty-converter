@@ -41,7 +41,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/sazardev/go-pretty-pdf
+        - github.com/sazardev/go-pretty-converter
   exclusions:
     paths:
       - bin

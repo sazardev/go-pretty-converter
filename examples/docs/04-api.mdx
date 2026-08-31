@@ -16,12 +16,12 @@ The public API is designed around the **functional options** pattern, providing 
 ## Creating a PDF instance
 
 ```go
-pdf, err := prettypdf.New(
-    prettypdf.WithSourceDir("./docs"),
-    prettypdf.WithOutputFile("out.pdf"),
-    prettypdf.WithTitle("Documentation"),
-    prettypdf.WithSubtitle("A Complete Reference"),
-    prettypdf.WithAuthor("Your Name"),
+pdf, err := prettyconverter.New(
+    prettyconverter.WithSourceDir("./docs"),
+    prettyconverter.WithOutputFile("out.pdf"),
+    prettyconverter.WithTitle("Documentation"),
+    prettyconverter.WithSubtitle("A Complete Reference"),
+    prettyconverter.WithAuthor("Your Name"),
 )
 ```
 
@@ -33,7 +33,7 @@ pdf, err := prettypdf.New(
 | `WithOutputFile` | `string` | `"out.pdf"` | Output PDF path |
 | `WithTitle` | `string` | `"Document"` | Document title |
 | `WithSubtitle` | `string` | `""` | Document subtitle |
-| `WithAuthor` | `string` | `"go-pretty-pdf"` | Author name |
+| `WithAuthor` | `string` | `"go-pretty-converter"` | Author name |
 | `WithTimeout` | `time.Duration` | `60s` | Chrome render timeout |
 | `WithCSS` | `string` | embedded | Custom CSS override |
 | `WithTemplate` | `string` | embedded | Custom HTML template |
@@ -53,18 +53,18 @@ Two built-in themes are available:
 Apply via:
 
 ```go
-prettypdf.WithTheme(theme.Minimal)
+prettyconverter.WithTheme(theme.Minimal)
 ```
 
 or override specific fields:
 
 ```go
-prettypdf.WithCSS(myCustomCSS)
-prettypdf.WithTemplate(myCustomTemplate)
+prettyconverter.WithCSS(myCustomCSS)
+prettyconverter.WithTemplate(myCustomTemplate)
 ```
 
 <DeepDive title="Theme Resolution Order">
-When both a theme and individual CSS/Template options are set, the **last-applied option wins**. Themes set at the `prettypdf` level populate `composeOpts.CSS` and `composeOpts.Template`. Any subsequent `WithCSS` or `WithTemplate` call overrides those values.
+When both a theme and individual CSS/Template options are set, the **last-applied option wins**. Themes set at the `prettyconverter` level populate `composeOpts.CSS` and `composeOpts.Template`. Any subsequent `WithCSS` or `WithTemplate` call overrides those values.
 </DeepDive>
 
 ## Build Pipeline

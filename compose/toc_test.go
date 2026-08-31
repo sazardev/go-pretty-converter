@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 func TestBuildTOCSkipsMalformedID(t *testing.T) {

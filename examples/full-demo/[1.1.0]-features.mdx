@@ -25,7 +25,7 @@ Three components are available out of the box:
 
 ## Variable Substitution
 
-Define variables in `go-pretty-pdf.yml` under `vars:`:
+Define variables in `go-pretty-converter.yml` under `vars:`:
 
 ```yaml
 vars:
@@ -45,7 +45,7 @@ You can use h1 through h3 by default (configurable via `lint.max_heading_depth`)
 This is an h3 heading. The linter will warn if you use deeper headings.
 
 <DeepDive title="Linter in action">
-Run `pretty-pdf check --strict` to catch:
+Run `pretty-converter check --strict` to catch:
 - Missing frontmatter fields
 - Invalid ID formats
 - Duplicate IDs across files

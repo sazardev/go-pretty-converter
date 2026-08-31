@@ -6,17 +6,17 @@ import (
 	"log"
 	"strings"
 
-	"github.com/sazardev/go-pretty-pdf"
+	"github.com/sazardev/go-pretty-converter"
 )
 
 func main() {
-	pdf, err := prettypdf.New(
-		prettypdf.WithSourceDir("./examples/docs"),
-		prettypdf.WithOutputFile("./examples/output/example-output.pdf"),
-		prettypdf.WithTitle("go-pretty-pdf — Complete Example"),
-		prettypdf.WithSubtitle("Every feature demonstrated with real MDX files"),
-		prettypdf.WithAuthor("go-pretty-pdf Demo"),
-		prettypdf.WithComponent("Callout", func(attrs map[string]string, inner string) string {
+	pdf, err := prettyconverter.New(
+		prettyconverter.WithSourceDir("./examples/docs"),
+		prettyconverter.WithOutputFile("./examples/output/example-output.pdf"),
+		prettyconverter.WithTitle("go-pretty-converter — Complete Example"),
+		prettyconverter.WithSubtitle("Every feature demonstrated with real MDX files"),
+		prettyconverter.WithAuthor("go-pretty-converter Demo"),
+		prettyconverter.WithComponent("Callout", func(attrs map[string]string, inner string) string {
 			level := attrs["title"]
 			if level == "" {
 				level = "info"
@@ -26,7 +26,7 @@ func main() {
 				level, strings.ToUpper(level), inner,
 			)
 		}),
-		prettypdf.WithComponent("Steps", func(attrs map[string]string, inner string) string {
+		prettyconverter.WithComponent("Steps", func(attrs map[string]string, inner string) string {
 			lines := strings.Split(strings.TrimSpace(inner), "\n")
 			var items []string
 			for i, line := range lines {
@@ -41,7 +41,7 @@ func main() {
 			}
 			return `<div class="steps-container">` + strings.Join(items, "\n") + `</div>`
 		}),
-		prettypdf.WithComponent("Card", func(attrs map[string]string, inner string) string {
+		prettyconverter.WithComponent("Card", func(attrs map[string]string, inner string) string {
 			title := attrs["title"]
 			icon := attrs["icon"]
 			return fmt.Sprintf(

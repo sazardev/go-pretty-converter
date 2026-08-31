@@ -1,6 +1,6 @@
-title: "go-pretty-pdf Showcase"
+title: "go-pretty-converter Showcase"
 subtitle: "A minimal, elegant example"
-author: "go-pretty-pdf"
+author: "go-pretty-converter"
 source: .
 output: showcase.pdf
 theme: default

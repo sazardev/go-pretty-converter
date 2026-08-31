@@ -10,8 +10,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
 )
 
 type liveServer struct {
@@ -38,7 +38,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	// serve never calls pdf.Render/Build (it only parses+composes HTML for
 	// live preview), so it needs no Chrome resolution at all.
 	opts := buildOpts(cfg, "", "")
-	pdf, err := prettypdf.New(opts...)
+	pdf, err := prettyconverter.New(opts...)
 	if err != nil {
 		return fmt.Errorf("initializing: %w", err)
 	}
@@ -114,7 +114,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (ls *liveServer) rebuild(pdf *prettypdf.PDF) error {
+func (ls *liveServer) rebuild(pdf *prettyconverter.PDF) error {
 	docs, err := pdf.ParseDir()
 	if err != nil && len(docs) == 0 {
 		return fmt.Errorf("parsing: %w", err)

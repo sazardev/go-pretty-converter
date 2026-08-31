@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 // Names of the --pdf-*/--site-* custom properties this file reads and

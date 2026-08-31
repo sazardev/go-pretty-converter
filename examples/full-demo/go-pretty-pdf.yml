@@ -1,4 +1,4 @@
-title: "go-pretty-pdf Full Demo"
+title: "go-pretty-converter Full Demo"
 subtitle: "A comprehensive example demonstrating every feature"
 author: "Omar"
 source: .
@@ -8,10 +8,10 @@ css: custom.css
 template: custom-template.html
 
 vars:
-  product: "go-pretty-pdf"
+  product: "go-pretty-converter"
   version: "1.0.0"
   company: "SazarDev"
-  website: "https://github.com/sazardev/go-pretty-pdf"
+  website: "https://github.com/sazardev/go-pretty-converter"
   year: "2026"
 
 lint:

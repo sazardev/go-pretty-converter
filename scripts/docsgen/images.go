@@ -172,9 +172,9 @@ html,body{margin:0;padding:0;width:1200px;height:630px;background:#282828;}
 </style></head><body>
 <div class="card">
   <div class="eyebrow">go &middot; CLI + library</div>
-  <div class="title">Write Markdown. Ship a beautiful <em>PDF.</em></div>
-  <div class="tagline">pretty-pdf turns a folder of Markdown into a typeset, print-ready PDF via headless Chrome.</div>
-  <div class="footer">go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest</div>
+  <div class="title">Write Markdown. Ship an audited <em>book.</em></div>
+  <div class="tagline">pretty-converter turns a folder of Markdown into a PDF, EPUB, and Kindle book via headless Chrome &mdash; audited for overflow, broken links, and low contrast before you ship.</div>
+  <div class="footer">go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest</div>
 </div>
 </body></html>`
 }

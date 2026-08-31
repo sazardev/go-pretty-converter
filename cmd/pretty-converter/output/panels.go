@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/analyze"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/analyze"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 type BuildStats struct {

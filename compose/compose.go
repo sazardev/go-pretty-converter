@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 //go:embed assets/template.html
@@ -33,7 +33,7 @@ func DefaultOptions() Options {
 	return Options{
 		Title:     "Document",
 		Subtitle:  "",
-		Author:    "go-pretty-pdf",
+		Author:    "go-pretty-converter",
 		ShowCover: true,
 		ShowTOC:   true,
 	}

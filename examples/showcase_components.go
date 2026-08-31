@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 // The showcase demonstrates that a component is nothing more than a Go
@@ -120,17 +120,17 @@ func progressHandler(attrs map[string]string, inner string) string {
 // showcaseComponents registers all eight custom components used by the
 // showcase book. They only take effect when the book is built through
 // this Go code (WithComponent registers in memory) — a bare
-// `pretty-pdf build` from the CLI has no way to load them from YAML.
-func showcaseComponents() []prettypdf.Option {
-	return []prettypdf.Option{
-		prettypdf.WithComponent("Callout", calloutHandler),
-		prettypdf.WithComponent("Badge", badgeHandler),
-		prettypdf.WithComponent("Steps", stepsHandler),
-		prettypdf.WithComponent("Card", cardHandler),
-		prettypdf.WithComponent("Stat", statHandler),
-		prettypdf.WithComponent("Timeline", timelineHandler),
-		prettypdf.WithComponent("Quote", quoteHandler),
-		prettypdf.WithComponent("Progress", progressHandler),
+// `pretty-converter build` from the CLI has no way to load them from YAML.
+func showcaseComponents() []prettyconverter.Option {
+	return []prettyconverter.Option{
+		prettyconverter.WithComponent("Callout", calloutHandler),
+		prettyconverter.WithComponent("Badge", badgeHandler),
+		prettyconverter.WithComponent("Steps", stepsHandler),
+		prettyconverter.WithComponent("Card", cardHandler),
+		prettyconverter.WithComponent("Stat", statHandler),
+		prettyconverter.WithComponent("Timeline", timelineHandler),
+		prettyconverter.WithComponent("Quote", quoteHandler),
+		prettyconverter.WithComponent("Progress", progressHandler),
 	}
 }
 
@@ -138,18 +138,18 @@ func showcaseComponents() []prettypdf.Option {
 // book: metadata, variable substitution, linting, and all custom
 // components. Shared by both the compose-only test and the full-render
 // test so they stay in sync.
-func showcaseOptions() []prettypdf.Option {
-	opts := []prettypdf.Option{
-		prettypdf.WithSourceDir("showcase"),
-		prettypdf.WithTitle("go-pretty-pdf Showcase"),
-		prettypdf.WithSubtitle("Every feature, one book"),
-		prettypdf.WithAuthor("go-pretty-pdf"),
-		prettypdf.WithHeaderTitle("go-pretty-pdf v1.0 — Showcase"),
-		prettypdf.WithVars(map[string]string{
-			"product": "go-pretty-pdf",
+func showcaseOptions() []prettyconverter.Option {
+	opts := []prettyconverter.Option{
+		prettyconverter.WithSourceDir("showcase"),
+		prettyconverter.WithTitle("go-pretty-converter Showcase"),
+		prettyconverter.WithSubtitle("Every feature, one book"),
+		prettyconverter.WithAuthor("go-pretty-converter"),
+		prettyconverter.WithHeaderTitle("go-pretty-converter v1.0 — Showcase"),
+		prettyconverter.WithVars(map[string]string{
+			"product": "go-pretty-converter",
 			"version": "1.0",
 		}),
-		prettypdf.WithValidator(showcaseValidator()),
+		prettyconverter.WithValidator(showcaseValidator()),
 	}
 	return append(opts, showcaseComponents()...)
 }

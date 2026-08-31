@@ -10,32 +10,32 @@ import (
 	"sync"
 	"time"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/render"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/render"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 // docsPDFDefault is the canonical, stable download URL (used in the
 // sitemap and as the href before any client-side JS runs). It mirrors the
 // site's own default theme (classic).
-const docsPDFDefault = "go-pretty-pdf-docs.pdf"
+const docsPDFDefault = "go-pretty-converter-docs.pdf"
 
 // docsPDFFilename returns the per-theme download artifact name. The site's
 // theme switcher (site.js) rewrites the download button's href to match
 // whichever of these the visitor currently has selected, so "download the
 // docs" always matches what they're looking at.
 func docsPDFFilename(themeID string) string {
-	return "go-pretty-pdf-docs-" + themeID + ".pdf"
+	return "go-pretty-converter-docs-" + themeID + ".pdf"
 }
 
 var readmeBadgesRe = regexp.MustCompile(`(?m)^\[!\[.*\n?`)
 
 // prepareDocsSource writes the three docs sources (README + CLI + changelog)
 // into a fresh temp directory as frontmattered MDX, the exact same source
-// a real `pretty-pdf build` would consume, and returns that directory plus
+// a real `pretty-converter build` would consume, and returns that directory plus
 // the parsed documents. PDF and EPUB builders share the same parsed
-// content; PDFs re-derive their own copy through prettypdf.New (the
+// content; PDFs re-derive their own copy through prettyconverter.New (the
 // dogfooding path), while EPUBs use the documents directly.
 //
 // Badge images point at shields.io/pkg.go.dev and would just render as
@@ -43,7 +43,7 @@ var readmeBadgesRe = regexp.MustCompile(`(?m)^\[!\[.*\n?`)
 // CLI's own safe default for untrusted MDX sources, so they're stripped
 // here.
 func prepareDocsSource(readme, cli, changelog []byte) (srcDir string, docs []*mdx.Document, err error) {
-	srcDir, err = os.MkdirTemp("", "go-pretty-pdf-docs-src-*")
+	srcDir, err = os.MkdirTemp("", "go-pretty-converter-docs-src-*")
 	if err != nil {
 		return "", nil, err
 	}
@@ -74,7 +74,7 @@ func prepareDocsSource(readme, cli, changelog []byte) (srcDir string, docs []*md
 
 // generateDocsPDF renders README.md + docs/cli.md + CHANGELOG.md into one
 // downloadable PDF per builtin theme, using the same code path a real
-// user's `pretty-pdf build` would take — dogfooding the actual public
+// user's `pretty-converter build` would take — dogfooding the actual public
 // library API (mdx parser, theme package, chromedp render pipeline), not a
 // raw HTML screenshot. Best-effort: like generateRasterAssets, it must not
 // break `go run ./scripts/docsgen` for contributors without Chrome
@@ -143,17 +143,17 @@ func generateDocsPDF(outDir string, readme, cli, changelog []byte, log *buildLog
 }
 
 func buildOneDocsPDF(srcDir, outPath, themeID string, log *buildLogger, noOutline, noTagged bool) error {
-	pdf, err := prettypdf.New(
-		prettypdf.WithSourceDir(srcDir),
-		prettypdf.WithOutputFile(outPath),
-		prettypdf.WithTitle(siteName),
-		prettypdf.WithSubtitle("Write Markdown. Ship a book."),
-		prettypdf.WithAuthor("sazardev"),
-		prettypdf.WithHeaderTitle("go-pretty-pdf — Documentation"),
-		prettypdf.WithThemeName(themeID, theme.Options{}),
-		prettypdf.WithTimeout(120*time.Second),
-		prettypdf.WithGenerateDocumentOutline(!noOutline),
-		prettypdf.WithGenerateTaggedPDF(!noTagged),
+	pdf, err := prettyconverter.New(
+		prettyconverter.WithSourceDir(srcDir),
+		prettyconverter.WithOutputFile(outPath),
+		prettyconverter.WithTitle(siteName),
+		prettyconverter.WithSubtitle("Write Markdown. Ship a book."),
+		prettyconverter.WithAuthor("sazardev"),
+		prettyconverter.WithHeaderTitle("go-pretty-converter — Documentation"),
+		prettyconverter.WithThemeName(themeID, theme.Options{}),
+		prettyconverter.WithTimeout(120*time.Second),
+		prettyconverter.WithGenerateDocumentOutline(!noOutline),
+		prettyconverter.WithGenerateTaggedPDF(!noTagged),
 	)
 	if err != nil {
 		return fmt.Errorf("configuring PDF build: %w", err)

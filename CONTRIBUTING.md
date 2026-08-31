@@ -1,15 +1,15 @@
-# Contributing to go-pretty-pdf
+# Contributing to go-pretty-converter
 
 Thanks for your interest in contributing!
 
 ## Development setup
 
-Requires Go 1.26+. Chrome/Chromium is optional — `pretty-pdf` auto-downloads
+Requires Go 1.26+. Chrome/Chromium is optional — `pretty-converter` auto-downloads
 a headless build if none is found (see `chromemgr`).
 
 ```bash
-git clone https://github.com/sazardev/go-pretty-pdf.git
-cd go-pretty-pdf
+git clone https://github.com/sazardev/go-pretty-converter.git
+cd go-pretty-converter
 go mod download
 ```
 
@@ -111,7 +111,7 @@ To cut a release:
 Checks before pushing the tag:
 
 - The tag is `v`-prefixed (the workflow only reacts to `v*`) and equals what
-  `pretty-pdf version` prints.
+  `pretty-converter version` prints.
 - The `[X.Y.Z]` changelog date is the release day, and the section exists
   (the changelog's own header links `[X.Y.Z]` against `vX.Y.Z`).
 - The next docs build picks the version up into `_site/version.json`

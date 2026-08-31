@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/render"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/render"
 )
 
 const wantDocs = 8
@@ -17,22 +17,22 @@ const wantDocs = 8
 // custom components, GFM extras, and the closing summary. If any of
 // these disappear, something in the pipeline broke.
 var wantInPDF = []string{
-	"go-pretty-pdf Showcase", // cover title
-	"Go 1.26+",               // project-facts table
-	"Headless Chrome",        // project-facts table
-	"Blocked by default",     // project-facts table
-	"Heading Level 5",        // typography: h1-h5
-	"Test coverage",          // custom Progress component
-	"Security hardening",     // custom Timeline component
-	"CALLOUT: INFO",          // custom Callout component
-	"CALLOUT: SUCCESS",       // custom Callout component
-	"CALLOUT: WARNING",       // custom Callout component
-	"CALLOUT: DANGER",        // custom Callout component
-	"Capabilities Summary",   // closing page
+	"go-pretty-converter Showcase", // cover title
+	"Go 1.26+",                     // project-facts table
+	"Headless Chrome",              // project-facts table
+	"Blocked by default",           // project-facts table
+	"Heading Level 5",              // typography: h1-h5
+	"Test coverage",                // custom Progress component
+	"Security hardening",           // custom Timeline component
+	"CALLOUT: INFO",                // custom Callout component
+	"CALLOUT: SUCCESS",             // custom Callout component
+	"CALLOUT: WARNING",             // custom Callout component
+	"CALLOUT: DANGER",              // custom Callout component
+	"Capabilities Summary",         // closing page
 }
 
 func TestShowcaseComposesVisibleData(t *testing.T) {
-	pdf, err := prettypdf.New(showcaseOptions()...)
+	pdf, err := prettyconverter.New(showcaseOptions()...)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -77,8 +77,8 @@ func TestShowcaseBuildsValidPDF(t *testing.T) {
 	}
 	outPath := filepath.Join(outputDir, "showcase.pdf")
 
-	opts := append(showcaseOptions(), prettypdf.WithOutputFile(outPath))
-	pdf, err := prettypdf.New(opts...)
+	opts := append(showcaseOptions(), prettyconverter.WithOutputFile(outPath))
+	pdf, err := prettyconverter.New(opts...)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

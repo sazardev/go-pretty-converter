@@ -2,19 +2,19 @@
 
 ## Overview
 
-`go-pretty-pdf` transforms a directory of MDX files into a print-ready PDF, EPUB, and/or Kindle
+`go-pretty-converter` transforms a directory of MDX files into a print-ready PDF, EPUB, and/or Kindle
 (MOBI/AZW3) ebook via headless Chrome (Kindle via Calibre's `ebook-convert`, invoked separately).
-It is both a Go library (`github.com/sazardev/go-pretty-pdf`) and a CLI tool.
+It is both a Go library (`github.com/sazardev/go-pretty-converter`) and a CLI tool.
 
 ## Commands
 
 ```bash
-go run ./cmd/pretty-pdf build --source ./docs --out out.pdf   # build a PDF
-go run ./cmd/pretty-pdf check --source ./docs                  # validate only (the command is `check`, not `validate`)
-go run ./cmd/pretty-pdf analyze --source ./docs                # static cross-format rendering-quality analysis, no Chrome/Calibre
-go run ./cmd/pretty-pdf epub --source ./docs --out out.epub    # EPUB build, no Chrome required
-go run ./cmd/pretty-pdf kindle --source ./docs --out out.mobi  # Kindle build, needs Calibre's ebook-convert on PATH
-go run ./cmd/pretty-pdf theme list                             # theme command family: list | show | new | add
+go run ./cmd/pretty-converter build --source ./docs --out out.pdf   # build a PDF
+go run ./cmd/pretty-converter check --source ./docs                  # validate only (the command is `check`, not `validate`)
+go run ./cmd/pretty-converter analyze --source ./docs                # static cross-format rendering-quality analysis, no Chrome/Calibre
+go run ./cmd/pretty-converter epub --source ./docs --out out.epub    # EPUB build, no Chrome required
+go run ./cmd/pretty-converter kindle --source ./docs --out out.mobi  # Kindle build, needs Calibre's ebook-convert on PATH
+go run ./cmd/pretty-converter theme list                             # theme command family: list | show | new | add
 go test ./...
 go test ./mdx/... -run TestParserParseFile -v
 make lint            # golangci-lint v2 (golangci-lint binary must be installed)
@@ -29,7 +29,7 @@ tidy → lint → test (-race, 3 OS matrix) → vet → vulncheck → build.
 ## Architecture
 
 ```
-cmd/pretty-pdf/    CLI entrypoint (cobra): build, check, analyze, init, watch, serve, epub, kindle, theme, version, completion
+cmd/pretty-converter/    CLI entrypoint (cobra): build, check, analyze, init, watch, serve, epub, kindle, theme, version, completion
 pdf.go             Root package — public API: New(), Build(), ParseDir(), ComposeHTML(), Render(), Validate(), LastAudit()
 mdx/               MDX parser (goldmark-based), custom component transpiler, validator interface
 analyze/           Static cross-format (PDF/EPUB/Kindle) rendering-quality analysis over parsed docs, no Chrome/Calibre
@@ -39,7 +39,7 @@ theme/             17 builtin themes over a shared base.css, custom .theme.yml t
 epub/              EPUB builder (no Chrome), shared with render path via theme
 kindle/            Kindle (MOBI/AZW3) builder: EPUB via epub/, converted through Calibre's ebook-convert
 chromemgr/         Chrome binary resolution + auto-download (chrome-headless-shell)
-config/            go-pretty-pdf.yml parsing, units (mm/in/pt) handling
+config/            go-pretty-converter.yml parsing, units (mm/in/pt) handling
 ```
 
 ### Pipeline
@@ -50,12 +50,12 @@ config/            go-pretty-pdf.yml parsing, units (mm/in/pt) handling
 
 - **Go 1.26+**.
 - Chrome is NOT strictly required: `chromemgr` auto-downloads a headless Chrome build on first
-  render (resolution: `--chrome-path` / `PRETTY_PDF_CHROME_PATH` → system Chrome → cached → download).
+  render (resolution: `--chrome-path` / `PRETTY_CONVERTER_CHROME_PATH` → system Chrome → cached → download).
   On `linux/arm64` no prebuilt exists, so Chrome must be installed and passed via `--chrome-path`.
 - Render-path tests skip automatically when no Chrome is found; chromemgr download tests are gated
   behind `CHROMEMGR_INTEGRATION=1`.
 - `make lint` enforces import grouping via goimports (`.golangci.yml`): stdlib + third-party first,
-  then `github.com/sazardev/go-pretty-pdf` imports in a separate group. `examples/` and `bin/` are
+  then `github.com/sazardev/go-pretty-converter` imports in a separate group. `examples/` and `bin/` are
   excluded from lint/format checks.
 
 ## Key conventions

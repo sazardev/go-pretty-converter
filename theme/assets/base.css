@@ -1,5 +1,5 @@
 /*
- * Shared structural skeleton for every go-pretty-pdf theme.
+ * Shared structural skeleton for every go-pretty-converter theme.
  *
  * This file is always loaded first. It defines fallback values for every
  * custom property a theme may set, then implements the actual page layout
@@ -33,7 +33,7 @@
      Chromium version honors an @page margin (any value, including 0) over
      whatever Page.printToPDF's marginTop/Bottom/Left/Right requested, so
      declaring one here — at any value — silently made margin_top/
-     margin_bottom/etc. from render.Options or go-pretty-pdf.yml have no
+     margin_bottom/etc. from render.Options or go-pretty-converter.yml have no
      effect at all. The imperative printToPDF margins are the single
      source of truth for page margins (see render.RenderToPDF and
      pdf.go's WithFullConfig); leaving this property out entirely is what

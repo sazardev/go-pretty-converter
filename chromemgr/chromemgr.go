@@ -2,7 +2,7 @@
 // headless rendering without requiring the user to install one by hand.
 //
 // Resolution order, mirroring what tools like Playwright/Puppeteer do:
-//  1. an explicit path (e.g. from --chrome-path / PRETTY_PDF_CHROME_PATH)
+//  1. an explicit path (e.g. from --chrome-path / PRETTY_CONVERTER_CHROME_PATH)
 //  2. a system-installed Chrome/Chromium/Edge chromedp can already find
 //  3. a previously auto-downloaded build in the local cache
 //  4. a freshly downloaded "chrome-headless-shell" build for this OS/arch,
@@ -130,7 +130,7 @@ func cacheDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(base, "go-pretty-pdf", "chrome")
+	dir := filepath.Join(base, "go-pretty-converter", "chrome")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -167,7 +167,7 @@ func findBinary(dir string) string {
 // platformStringFor maps a Go GOOS/GOARCH pair to the platform identifier
 // used by the Chrome for Testing JSON API and download URLs. Chrome for
 // Testing does not publish linux/arm64 or windows/arm64 builds as of this
-// writing, matching go-pretty-pdf's own release matrix minus linux/arm64 —
+// writing, matching go-pretty-converter's own release matrix minus linux/arm64 —
 // that combination surfaces as an explicit error rather than a silent
 // failure.
 func platformStringFor(goos, goarch string) (string, error) {
@@ -189,7 +189,7 @@ func platformStringFor(goos, goarch string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf(
-		"no prebuilt Chrome-for-Testing binary for %s/%s — install Chrome/Chromium manually and pass --chrome-path (or set PRETTY_PDF_CHROME_PATH)",
+		"no prebuilt Chrome-for-Testing binary for %s/%s — install Chrome/Chromium manually and pass --chrome-path (or set PRETTY_CONVERTER_CHROME_PATH)",
 		goos, goarch,
 	)
 }

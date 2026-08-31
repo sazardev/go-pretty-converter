@@ -22,7 +22,7 @@ depends_on: ["[1.2.0]"]
 
 1. Write your `.mdx` files
 2. Organize them with `[X.Y.Z]` IDs
-3. Run `pretty-pdf build`
+3. Run `pretty-converter build`
 4. Get your PDF
 
 ## Nested
@@ -44,14 +44,14 @@ depends_on: ["[1.2.0]"]
 ## Code
 
 ```go
-pdf, err := prettypdf.New(
-    prettypdf.WithSourceDir("./docs"),
-    prettypdf.WithOutputFile("out.pdf"),
+pdf, err := prettyconverter.New(
+    prettyconverter.WithSourceDir("./docs"),
+    prettyconverter.WithOutputFile("out.pdf"),
 )
 ```
 
 ```bash
-pretty-pdf build --source ./docs --out out.pdf
+pretty-converter build --source ./docs --out out.pdf
 ```
 
 ```yaml

@@ -5,11 +5,11 @@ before:
     - go mod tidy
 
 builds:
-  - main: ./cmd/pretty-pdf
-    binary: pretty-pdf
+  - main: ./cmd/pretty-converter
+    binary: pretty-converter
     ldflags:
       - -s -w
-      - -X github.com/sazardev/go-pretty-pdf/version.Version={{ .Version }}
+      - -X github.com/sazardev/go-pretty-converter/version.Version={{ .Version }}
     env:
       - CGO_ENABLED=0
     goos:

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DefaultConfigFile = "go-pretty-pdf.yml"
+	DefaultConfigFile = "go-pretty-converter.yml"
 	defaultSource     = "book"
 	defaultOutput     = "out.pdf"
 )
@@ -89,7 +89,7 @@ func Default() *Config {
 		Source: defaultSource,
 		Output: defaultOutput,
 		Title:  "Document",
-		Author: "go-pretty-pdf",
+		Author: "go-pretty-converter",
 		Lint: LintConfig{
 			RequireFrontmatter: []string{"id", "title"},
 			NoDuplicateIDs:     true,

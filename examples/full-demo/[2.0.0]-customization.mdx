@@ -18,10 +18,10 @@ depends_on: ["[1.1.0]"]
 Override the default print styles by providing your own CSS:
 
 ```bash
-pretty-pdf build --css ./custom.css
+pretty-converter build --css ./custom.css
 ```
 
-Or define it in `go-pretty-pdf.yml`:
+Or define it in `go-pretty-converter.yml`:
 
 ```yaml
 css: custom.css
@@ -32,7 +32,7 @@ css: custom.css
 Override the HTML template for complete control over the document structure:
 
 ```bash
-pretty-pdf build --template ./custom-template.html
+pretty-converter build --template ./custom-template.html
 ```
 
 Template variables available:
@@ -52,8 +52,8 @@ Template variables available:
 Choose a built-in theme:
 
 ```bash
-pretty-pdf build --theme default
-pretty-pdf build --theme minimal
+pretty-converter build --theme default
+pretty-converter build --theme minimal
 ```
 
 <Axiom>

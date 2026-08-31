@@ -1,11 +1,18 @@
-# go-pretty-pdf
+# go-pretty-converter
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/sazardev/go-pretty-pdf.svg)](https://pkg.go.dev/github.com/sazardev/go-pretty-pdf)
-[![CI](https://github.com/sazardev/go-pretty-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/sazardev/go-pretty-pdf/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sazardev/go-pretty-pdf)](https://goreportcard.com/report/github.com/sazardev/go-pretty-pdf)
+[![Go Reference](https://pkg.go.dev/badge/github.com/sazardev/go-pretty-converter.svg)](https://pkg.go.dev/github.com/sazardev/go-pretty-converter)
+[![CI](https://github.com/sazardev/go-pretty-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/sazardev/go-pretty-converter/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sazardev/go-pretty-converter)](https://goreportcard.com/report/github.com/sazardev/go-pretty-converter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Transform a directory of MDX files into a beautiful, print-ready PDF via headless Chrome — plus EPUB 3 and Kindle (MOBI/AZW3) output.
+**The only Markdown-to-book toolchain that checks its own work.**
+
+Transform a directory of MDX files into a PDF, an EPUB 3, and a Kindle
+(MOBI/AZW3) book — via headless Chrome and Calibre — with an automatic
+quality audit (`pretty-converter analyze`, plus a post-render check on every
+build) that catches overflow, broken links, low-contrast text, and clipped
+headings before your readers do. Pandoc and most Markdown→PDF tools convert
+and stop there; go-pretty-converter converts, then tells you what's still broken.
 
 **Library + CLI.** Use it as a composable Go library or as a standalone command-line tool.
 
@@ -18,20 +25,20 @@ validating those 3,000 documents takes 142 ms. Measured, reproducible numbers in
 ### CLI (binary)
 
 ```bash
-go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest
+go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest
 ```
 
 ### Library
 
 ```bash
-go get github.com/sazardev/go-pretty-pdf
+go get github.com/sazardev/go-pretty-converter
 ```
 
 ### Requirements
 
 - **Go 1.26+**
-- **Chrome or Chromium** — optional, only for PDF output. If none is found on your system, `pretty-pdf` automatically downloads and caches a small headless-only Chrome build the first time you run it (like Playwright/Puppeteer do). Already have Chrome installed? It's used as-is, nothing is downloaded. Prefer to control this yourself? Pass `--chrome-path /path/to/chrome` or set `PRETTY_PDF_CHROME_PATH`. Auto-download currently covers linux/amd64, darwin/amd64, darwin/arm64, and windows/amd64 — on linux/arm64 (no official build exists yet) install Chromium via your package manager and point `--chrome-path` at it.
-- **Calibre** — optional, only for Kindle output (`--format kindle` / `pretty-pdf kindle`). Not bundled or auto-downloaded — install it from [calibre-ebook.com](https://calibre-ebook.com/download) so `ebook-convert` is on your `PATH`, or point `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH` at it.
+- **Chrome or Chromium** — optional, only for PDF output. If none is found on your system, `pretty-converter` automatically downloads and caches a small headless-only Chrome build the first time you run it (like Playwright/Puppeteer do). Already have Chrome installed? It's used as-is, nothing is downloaded. Prefer to control this yourself? Pass `--chrome-path /path/to/chrome` or set `PRETTY_CONVERTER_CHROME_PATH`. Auto-download currently covers linux/amd64, darwin/amd64, darwin/arm64, and windows/amd64 — on linux/arm64 (no official build exists yet) install Chromium via your package manager and point `--chrome-path` at it.
+- **Calibre** — optional, only for Kindle output (`--format kindle` / `pretty-converter kindle`). Not bundled or auto-downloaded — install it from [calibre-ebook.com](https://calibre-ebook.com/download) so `ebook-convert` is on your `PATH`, or point `--calibre-path` / `PRETTY_CONVERTER_CALIBRE_PATH` at it.
 
 ## Quick start
 
@@ -39,22 +46,22 @@ go get github.com/sazardev/go-pretty-pdf
 
 ```bash
 # Scaffold a new book project (interactive wizard)
-pretty-pdf init my-book
+pretty-converter init my-book
 
 # Build a PDF
-pretty-pdf build --source my-book --out my-book.pdf
+pretty-converter build --source my-book --out my-book.pdf
 
 # Watch for changes and rebuild
-pretty-pdf watch --source my-book --out my-book.pdf
+pretty-converter watch --source my-book --out my-book.pdf
 
 # Build a Kindle-ready ebook (needs Calibre's ebook-convert on PATH)
-pretty-pdf kindle --source my-book --out my-book.mobi
+pretty-converter kindle --source my-book --out my-book.mobi
 
 # Validate MDX files
-pretty-pdf check --source my-book
+pretty-converter check --source my-book
 
 # Flag content that will render poorly on PDF/EPUB/Kindle (errors, warnings, improvements)
-pretty-pdf analyze --source my-book
+pretty-converter analyze --source my-book
 ```
 
 ### Library
@@ -66,15 +73,15 @@ import (
 	"context"
 	"log"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
 )
 
 func main() {
-	pdf, err := prettypdf.New(
-		prettypdf.WithSourceDir("./docs"),
-		prettypdf.WithOutputFile("output.pdf"),
-		prettypdf.WithTitle("My Documentation"),
-		prettypdf.WithAuthor("Jane Doe"),
+	pdf, err := prettyconverter.New(
+		prettyconverter.WithSourceDir("./docs"),
+		prettyconverter.WithOutputFile("output.pdf"),
+		prettyconverter.WithTitle("My Documentation"),
+		prettyconverter.WithAuthor("Jane Doe"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +102,7 @@ MD/MDX files → Parse frontmatter & markdown → Transpile components → Compo
 1. **Parse** — goldmark parses `.md`/`.mdx` files with YAML frontmatter. Fenced code blocks (` ```go `, ` ```python `, ...) are syntax-highlighted via [Chroma](https://github.com/alecthomas/chroma), using a style paired to each theme's tone (e.g. Dracula for the `dark` theme, the Gruvbox style for the `gruvbox` theme, GitHub's light style everywhere else)
 2. **Transpile** — custom components (`<DeepDive>`, `<Warning>`, `<Axiom>`) become styled HTML
 3. **Compose** — HTML assembled with embedded template + CSS + auto-generated Table of Contents
-4. **Render** — headless Chrome prints to PDF with headers, footers, and PDF bookmarks, then an automatic quality audit checks the result for overflowing content, broken images, low-contrast text, near-empty output, dead links, duplicate ids, broken TOC entries, unloaded fonts, at-risk page breaks, and headings at risk of being clipped by the print engine (see `pretty-pdf build`'s `Warnings` output, or `render.RenderToPDFWithAudit` in the library API)
+4. **Render** — headless Chrome prints to PDF with headers, footers, and PDF bookmarks, then an automatic quality audit checks the result for overflowing content, broken images, low-contrast text, near-empty output, dead links, duplicate ids, broken TOC entries, unloaded fonts, at-risk page breaks, and headings at risk of being clipped by the print engine (see `pretty-converter build`'s `Warnings` output, or `render.RenderToPDFWithAudit` in the library API)
 
 Documents are sorted by their `[X.Y.Z]` frontmatter ID, not filename.
 
@@ -133,7 +140,7 @@ for details.
 
 ## Performance
 
-`go-pretty-pdf` keeps the Go-side pipeline (parse + validate + compose)
+`go-pretty-converter` keeps the Go-side pipeline (parse + validate + compose)
 sub-second even on large books; headless Chrome's print step is what drives
 PDF wall time. Measured on an i5-13500 (WSL2) with Chromium 150:
 
@@ -147,7 +154,7 @@ Full table, hardware, and a reproducible recipe:
 [BENCHMARKS.md](BENCHMARKS.md). To measure your own machine:
 
 ```bash
-PRETTY_PDF_CHROME_PATH=/usr/bin/chromium go run ./scripts/benchmark --color=false
+PRETTY_CONVERTER_CHROME_PATH=/usr/bin/chromium go run ./scripts/benchmark --color=false
 ```
 
 ## MDX format
@@ -186,7 +193,7 @@ Required frontmatter fields: `id` (format `[X.Y.Z]`), `title`.
 Register custom components via `WithComponent()`:
 
 ```go
-prettypdf.WithComponent("Callout", func(attrs map[string]string, inner string) string {
+prettyconverter.WithComponent("Callout", func(attrs map[string]string, inner string) string {
 	level := attrs["level"]
 	return fmt.Sprintf(`<div class="callout callout-%s">%s</div>`, level, inner)
 })
@@ -194,7 +201,7 @@ prettypdf.WithComponent("Callout", func(attrs map[string]string, inner string) s
 
 ## Configuration
 
-Create a `go-pretty-pdf.yml` in your project:
+Create a `go-pretty-converter.yml` in your project:
 
 ```yaml
 title: "My Book"
@@ -208,7 +215,7 @@ css: custom.css
 template: custom-template.html
 
 vars:
-  product: "go-pretty-pdf"
+  product: "go-pretty-converter"
   version: "1.0"
 
 lint:
@@ -231,7 +238,7 @@ render:
 
 ```go
 // Constructor with functional options
-pdf, err := prettypdf.New(opts...)
+pdf, err := prettyconverter.New(opts...)
 
 // All-in-one build pipeline
 pdf.Build(ctx)
@@ -288,17 +295,17 @@ customize without writing CSS, and extendable with your own custom themes:
 
 ```bash
 # Pick a theme, tweak colors/fonts/density, drop sections you don't want
-pretty-pdf build --theme corporate \
+pretty-converter build --theme corporate \
   --color-primary "#0ea5e9" --font-heading "Georgia, serif" \
   --no-cover --no-page-numbers --density compact
 
 # Scaffold your own reusable theme
-pretty-pdf theme new my-report --from corporate
-pretty-pdf theme list
+pretty-converter theme new my-report --from corporate
+pretty-converter theme list
 ```
 
 ```go
-prettypdf.WithThemeName("corporate", theme.Options{
+prettyconverter.WithThemeName("corporate", theme.Options{
 	Colors:   theme.Colors{Primary: "#0ea5e9"},
 	Sections: theme.Sections{Cover: theme.BoolPtr(false)},
 })
@@ -306,25 +313,25 @@ prettypdf.WithThemeName("corporate", theme.Options{
 
 Custom themes live in `<name>.theme.yml` files (project-local `./themes/`
 or a global themes directory) and `extends` a builtin theme. Full reference,
-all customization fields, and the `pretty-pdf theme` command family:
+all customization fields, and the `pretty-converter theme` command family:
 see [docs/cli.md#themes](docs/cli.md#themes).
 
 ## CLI reference
 
 ```
-pretty-pdf build     Build a PDF from MDX source files
-pretty-pdf epub      Build an EPUB from MDX source files (no Chrome required)
-pretty-pdf kindle    Build a Kindle-ready MOBI/AZW3 file (needs Calibre's ebook-convert)
-pretty-pdf check     Validate MDX files without building
-pretty-pdf analyze   Static cross-format rendering-quality analysis (no Chrome/Calibre)
-pretty-pdf theme     List, inspect, and manage themes
-pretty-pdf init      Scaffold a new book project (interactive wizard)
-pretty-pdf watch     Watch for changes and rebuild automatically
-pretty-pdf serve     Preview MDX as HTML with live reload (no Chrome required)
-pretty-pdf version   Print the version number
+pretty-converter build     Build a PDF from MDX source files
+pretty-converter epub      Build an EPUB from MDX source files (no Chrome required)
+pretty-converter kindle    Build a Kindle-ready MOBI/AZW3 file (needs Calibre's ebook-convert)
+pretty-converter check     Validate MDX files without building
+pretty-converter analyze   Static cross-format rendering-quality analysis (no Chrome/Calibre)
+pretty-converter theme     List, inspect, and manage themes
+pretty-converter init      Scaffold a new book project (interactive wizard)
+pretty-converter watch     Watch for changes and rebuild automatically
+pretty-converter serve     Preview MDX as HTML with live reload (no Chrome required)
+pretty-converter version   Print the version number
 ```
 
-Run `pretty-pdf <command> --help` for the full flag list of any command.
+Run `pretty-converter <command> --help` for the full flag list of any command.
 
 Global flags: `--config`, `--source`, `--verbose`, `--no-color`, `--quiet`
 

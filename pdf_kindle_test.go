@@ -1,4 +1,4 @@
-package prettypdf
+package prettyconverter
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sazardev/go-pretty-pdf/kindle"
+	"github.com/sazardev/go-pretty-converter/kindle"
 )
 
 // fakeEbookConvertPath is a compiled stand-in for Calibre's ebook-convert,
@@ -21,7 +21,7 @@ import (
 var fakeEbookConvertPath string
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "pretty-pdf-fake-calibre-*")
+	dir, err := os.MkdirTemp("", "pretty-converter-fake-calibre-*")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

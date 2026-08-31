@@ -1,5 +1,5 @@
 // Command benchmark runs an automated performance verification of
-// go-pretty-pdf across multiple book sizes. It builds the real CLI binary,
+// go-pretty-converter across multiple book sizes. It builds the real CLI binary,
 // renders real books through it, measures wall time / pages / throughput /
 // live CPU-RAM of the whole process tree (including Chrome), shows an
 // animated readout per export, and writes benchmark-report.json.
@@ -373,7 +373,7 @@ func progressBar(pct float64, width int, color bool) string {
 }
 
 func banner(color bool) {
-	fmt.Fprintf(os.Stderr, "\n  %s\n", ansi(bold+cyan, color)+"go-pretty-pdf · automated performance verification"+ansi(reset, color))
+	fmt.Fprintf(os.Stderr, "\n  %s\n", ansi(bold+cyan, color)+"go-pretty-converter · automated performance verification"+ansi(reset, color))
 	fmt.Fprintf(os.Stderr, "  %s\n", ansi(dim, color)+"renders real books across sizes, samples CPU/RAM live, reports everything"+ansi(reset, color))
 	fmt.Fprintln(os.Stderr)
 }
@@ -474,7 +474,7 @@ func main() {
 
 	workDir := *outFlag
 	if workDir == "" {
-		workDir, _ = os.MkdirTemp("", "pretty-pdf-bench-*")
+		workDir, _ = os.MkdirTemp("", "pretty-converter-bench-*")
 	}
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -483,7 +483,7 @@ func main() {
 
 	banner(*color)
 
-	bin := filepath.Join(workDir, "pretty-pdf-bin")
+	bin := filepath.Join(workDir, "pretty-converter-bin")
 	fmt.Fprintf(os.Stderr, "  %s building CLI binary...\n", ansi(dim, *color))
 	if err := buildCLI(bin); err != nil {
 		fmt.Fprintf(os.Stderr, "  %serror building CLI: %v%s\n", ansi(red, *color), err, ansi(reset, *color))
@@ -556,7 +556,7 @@ func main() {
 }
 
 func buildCLI(dest string) error {
-	cmd := exec.Command("go", "build", "-o", dest, "github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf")
+	cmd := exec.Command("go", "build", "-o", dest, "github.com/sazardev/go-pretty-converter/cmd/pretty-converter")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

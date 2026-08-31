@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "pretty-pdf-site-theme";
+  var STORAGE_KEY = "pretty-converter-site-theme";
 
   // ---------- copy to clipboard ----------
   function wireCopy(btnId, text) {
@@ -83,7 +83,7 @@
     cursor.className = "cursor";
     cmdLine.appendChild(cursor);
 
-    var fullCmd = "pretty-pdf build --source ./book --out book.pdf";
+    var fullCmd = "pretty-converter build --source ./book --out book.pdf";
 
     function appendRest(idx) {
       if (idx >= termLines.length) return;
@@ -143,7 +143,7 @@
     if (navSwatches && pickedOption) navSwatches.innerHTML = pickedOption.innerHTML;
 
     var pdfLink = document.getElementById("themePdfLink");
-    if (pdfLink) pdfLink.setAttribute("href", "go-pretty-pdf-docs-" + name + ".pdf");
+    if (pdfLink) pdfLink.setAttribute("href", "go-pretty-converter-docs-" + name + ".pdf");
 
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, name); } catch (e) {}
@@ -246,8 +246,8 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    wireCopy("copyInstall", "go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest");
-    wireCopy("copyInit", "pretty-pdf init my-book");
+    wireCopy("copyInstall", "go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest");
+    wireCopy("copyInit", "pretty-converter init my-book");
     initReveal();
     renderTerminal();
     initThemeSwitcher();

@@ -27,7 +27,7 @@ func TestDefault(t *testing.T) {
 
 func TestLoadThemeOptions(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	content := `theme: corporate
 theme_options:
   colors:
@@ -82,7 +82,7 @@ theme_options:
 
 func TestLoad(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	content := `title: "My Book"
 subtitle: "A Guide"
 author: "Jane Doe"
@@ -156,7 +156,7 @@ render:
 
 func TestLoadCoverImage(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	content := `title: "My Book"
 render:
   cover_image: assets/cover.png
@@ -176,7 +176,7 @@ render:
 
 func TestLoadCustomPaperSize(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	content := `title: "Trade Paperback"
 render:
   paper: "6x9in"
@@ -204,7 +204,7 @@ render:
 
 func TestLoadDefaultsOnMissingKeys(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	content := `title: "Just Title"
 `
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -229,7 +229,7 @@ func TestLoadDefaultsOnMissingKeys(t *testing.T) {
 
 func TestFindConfig(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "go-pretty-pdf.yml")
+	path := filepath.Join(dir, "go-pretty-converter.yml")
 	if err := os.WriteFile(path, []byte("title: test\n"), 0644); err != nil {
 		t.Fatal(err)
 	}

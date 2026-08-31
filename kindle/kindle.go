@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/epub"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	"github.com/sazardev/go-pretty-converter/epub"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 // Options configures the generated Kindle file. EPUB carries the same

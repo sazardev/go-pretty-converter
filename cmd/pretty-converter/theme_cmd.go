@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 var (
@@ -21,19 +21,19 @@ var (
 var themeCmd = &cobra.Command{
 	Use:   "theme",
 	Short: "List, inspect, and manage PDF themes",
-	Long: fmt.Sprintf(`Manage go-pretty-pdf's built-in and custom themes: list what's available,
+	Long: fmt.Sprintf(`Manage go-pretty-converter's built-in and custom themes: list what's available,
 inspect resolved CSS, scaffold new custom themes, and import existing ones.
 
   %d built-in themes: %s
 
-Themes are also customizable without writing CSS via 'pretty-pdf build' flags
+Themes are also customizable without writing CSS via 'pretty-converter build' flags
 (--color-*, --font-*, --density, --no-cover/--no-toc/--no-page-numbers/--no-header)
-or the 'theme_options' block in go-pretty-pdf.yml.`,
+or the 'theme_options' block in go-pretty-converter.yml.`,
 		len(theme.List()), strings.Join(themeNames(), ", ")),
-	Example: `  pretty-pdf theme list
-  pretty-pdf theme show corporate
-  pretty-pdf theme new my-report --from corporate
-  pretty-pdf theme add ./some-theme.theme.yml`,
+	Example: `  pretty-converter theme list
+  pretty-converter theme show corporate
+  pretty-converter theme new my-report --from corporate
+  pretty-converter theme add ./some-theme.theme.yml`,
 }
 
 var themeListCmd = &cobra.Command{
@@ -41,7 +41,7 @@ var themeListCmd = &cobra.Command{
 	Short: "List built-in and custom themes",
 	Long: `Print every built-in theme with its description, followed by any custom
 themes discovered in ./themes (project-local) and the global themes
-directory (~/.config/pretty-pdf/themes on Linux).`,
+directory (~/.config/pretty-converter/themes on Linux).`,
 	RunE: runThemeList,
 }
 
@@ -51,8 +51,8 @@ var themeShowCmd = &cobra.Command{
 	Long: `Resolve a theme by name — built-in, a custom theme discovered on disk, or a
 direct path to a .theme.yml/.css file — with no customization applied, and
 print its fully-assembled CSS to stdout.`,
-	Example: `  pretty-pdf theme show dark
-  pretty-pdf theme show my-report > my-report.css`,
+	Example: `  pretty-converter theme show dark
+  pretty-converter theme show my-report > my-report.css`,
 	Args: cobra.ExactArgs(1),
 	RunE: runThemeShow,
 }
@@ -63,8 +63,8 @@ var themeNewCmd = &cobra.Command{
 	Long: `Write a starter <name>.theme.yml you can hand-edit: colors, fonts, section
 toggles, density, and a raw CSS escape hatch. Refuses to overwrite an
 existing file.`,
-	Example: `  pretty-pdf theme new my-report --from corporate
-  pretty-pdf theme new my-report --from classic --global`,
+	Example: `  pretty-converter theme new my-report --from corporate
+  pretty-converter theme new my-report --from classic --global`,
 	Args: cobra.ExactArgs(1),
 	RunE: runThemeNew,
 }
@@ -75,9 +75,9 @@ var themeAddCmd = &cobra.Command{
 	Long: `Copy an existing .theme.yml file into the managed themes directory as-is, or
 wrap a loose .css file into a minimal .theme.yml (extends: default, with the
 file's content as its css: block).`,
-	Example: `  pretty-pdf theme add ./some-theme.theme.yml
-  pretty-pdf theme add ./brand.css --as my-report
-  pretty-pdf theme add ./some-theme.theme.yml --global`,
+	Example: `  pretty-converter theme add ./some-theme.theme.yml
+  pretty-converter theme add ./brand.css --as my-report
+  pretty-converter theme add ./some-theme.theme.yml --global`,
 	Args: cobra.ExactArgs(1),
 	RunE: runThemeAdd,
 }
@@ -120,7 +120,7 @@ func runThemeList(cmd *cobra.Command, args []string) error {
 	fmt.Println("  " + output.Heading("Custom themes"))
 	fmt.Println()
 	if len(customThemes) == 0 {
-		fmt.Println("  " + output.MutedStyle.Render("none found — create one with `pretty-pdf theme new <name>`"))
+		fmt.Println("  " + output.MutedStyle.Render("none found — create one with `pretty-converter theme new <name>`"))
 	} else {
 		for _, c := range customThemes {
 			scope := "project"
@@ -152,7 +152,7 @@ func runThemeNew(cmd *cobra.Command, args []string) error {
 
 	base, ok := theme.Get(themeFrom)
 	if !ok {
-		return fmt.Errorf("unknown base theme %q (see `pretty-pdf theme list`)", themeFrom)
+		return fmt.Errorf("unknown base theme %q (see `pretty-converter theme list`)", themeFrom)
 	}
 
 	dir, err := themeTargetDir()

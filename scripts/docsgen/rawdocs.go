@@ -40,7 +40,7 @@ func buildRawDocs(outDir, root string, readme, cli, changelog []byte, log *build
 // reference file with clear section dividers, in reading order.
 func concatDocsMarkdown(readme, cli, changelog []byte) []byte {
 	var b strings.Builder
-	b.WriteString("# go-pretty-pdf — Full Documentation (source)\n\n")
+	b.WriteString("# go-pretty-converter — Full Documentation (source)\n\n")
 	b.WriteString("> Generated from README.md + docs/cli.md + CHANGELOG.md.\n\n")
 	b.WriteString("<!-- README.md -->\n\n")
 	b.Write(readme)

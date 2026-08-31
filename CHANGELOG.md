@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: project renamed `go-pretty-pdf` → `go-pretty-converter`.** The tool now builds PDF, EPUB, and Kindle from one Markdown source, so "pdf" in the name no longer described what it does. Everything moved: Go module path (`github.com/sazardev/go-pretty-pdf` → `github.com/sazardev/go-pretty-converter`), root package (`prettypdf` → `prettyconverter`), CLI binary/command (`pretty-pdf` → `pretty-converter`), default config filename (`go-pretty-pdf.yml` → `go-pretty-converter.yml`), and the `PRETTY_PDF_CHROME_PATH`/`PRETTY_PDF_CALIBRE_PATH` env vars (→ `PRETTY_CONVERTER_CHROME_PATH`/`PRETTY_CONVERTER_CALIBRE_PATH`). Existing installs: `go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest`; existing `go-pretty-pdf.yml` files should be renamed to `go-pretty-converter.yml` (or passed explicitly via `--config`).
+
 ### Added
 
-- **Kindle output** (`pretty-pdf kindle`, or `build --format kindle`/`pdf,epub,kindle`): builds the same EPUB the `epub` command produces, then converts it to a Kindle-ready MOBI (default) or AZW3 file via Calibre's `ebook-convert` — Amazon retired its own KindleGen tool in 2022, so Calibre is now the standard converter. Calibre is not bundled; install it separately and put `ebook-convert` on `PATH`, or pass `--calibre-path` / `PRETTY_PDF_CALIBRE_PATH`. New Go API: `prettypdf.FormatKindle`, `WithCalibreExecPath`, `PDF.RenderKindle`/`NeedsCalibre`, and the standalone `kindle` package (`kindle.Write`, `kindle.ResolveCalibre`).
-- **`pretty-pdf analyze`**: a static content analyzer, no Chrome or Calibre required, that flags patterns which render poorly (or break outright) across PDF, EPUB, and Kindle — distinct from `check`'s frontmatter/structure validation. Reports three severities: **errors** (`broken-internal-anchor`, `duplicate-element-id`, `image-file-not-found`), **warnings** (`heading-level-skip`, `multiple-h1`, `wide-table`, `image-missing-alt`, `long-code-line`, `deep-list-nesting`, `long-chapter-no-subheadings`), and **improvements** (`no-headings`, `image-external-url`, `image-oversized`, `no-tags`). Supports `--strict` (fail on warnings too), `--json`, and threshold flags (`--max-table-columns`, `--max-code-line-length`, `--max-list-depth`, `--long-chapter-words`). New Go API: the `analyze` package (`analyze.Analyze`, `analyze.Issue`, `analyze.Severity`, `analyze.Options`).
+- **Kindle output** (`pretty-converter kindle`, or `build --format kindle`/`pdf,epub,kindle`): builds the same EPUB the `epub` command produces, then converts it to a Kindle-ready MOBI (default) or AZW3 file via Calibre's `ebook-convert` — Amazon retired its own KindleGen tool in 2022, so Calibre is now the standard converter. Calibre is not bundled; install it separately and put `ebook-convert` on `PATH`, or pass `--calibre-path` / `PRETTY_CONVERTER_CALIBRE_PATH`. New Go API: `prettyconverter.FormatKindle`, `WithCalibreExecPath`, `PDF.RenderKindle`/`NeedsCalibre`, and the standalone `kindle` package (`kindle.Write`, `kindle.ResolveCalibre`).
+- **`pretty-converter analyze`**: a static content analyzer, no Chrome or Calibre required, that flags patterns which render poorly (or break outright) across PDF, EPUB, and Kindle — distinct from `check`'s frontmatter/structure validation. Reports three severities: **errors** (`broken-internal-anchor`, `duplicate-element-id`, `image-file-not-found`), **warnings** (`heading-level-skip`, `multiple-h1`, `wide-table`, `image-missing-alt`, `long-code-line`, `deep-list-nesting`, `long-chapter-no-subheadings`), and **improvements** (`no-headings`, `image-external-url`, `image-oversized`, `no-tags`). Supports `--strict` (fail on warnings too), `--json`, and threshold flags (`--max-table-columns`, `--max-code-line-length`, `--max-list-depth`, `--long-chapter-words`). New Go API: the `analyze` package (`analyze.Analyze`, `analyze.Issue`, `analyze.Severity`, `analyze.Options`).
 
 ## [0.11.0] - 2026-08-12
 
@@ -306,15 +310,15 @@ Known limitation: Chrome reserves a small, fixed ~0.2in strip at the very top/bo
 - GitHub Actions CI (lint, test, vet, build on 3 OS) and release pipeline (goreleaser)
 - Local Makefile with lint, test, build, and release-dry-run targets
 
-[0.11.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.11.0
-[0.10.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.10.0
-[0.9.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.9.0
-[0.8.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.8.0
-[0.7.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.7.0
-[0.6.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.6.0
-[0.5.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.5.0
-[0.4.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.4.0
-[0.3.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.3.0
-[0.2.1]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.2.1
-[0.2.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.2.0
-[0.1.0]: https://github.com/sazardev/go-pretty-pdf/releases/tag/v0.1.0
+[0.11.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.11.0
+[0.10.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.10.0
+[0.9.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.9.0
+[0.8.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.8.0
+[0.7.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.7.0
+[0.6.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.6.0
+[0.5.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.5.0
+[0.4.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.4.0
+[0.3.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.3.0
+[0.2.1]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.2.1
+[0.2.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.2.0
+[0.1.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.1.0

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "pretty-pdf-site-theme";
+  var STORAGE_KEY = "pretty-converter-site-theme";
   var root = document.documentElement;
 
   function applyTheme(name) {
@@ -25,16 +25,16 @@
 
   // Keeps the "Download these docs as a PDF" button pointed at the PDF
   // that matches whatever theme is currently on screen — docsgen
-  // pre-renders one PDF per builtin theme (go-pretty-pdf-docs-<id>.pdf),
+  // pre-renders one PDF per builtin theme (go-pretty-converter-docs-<id>.pdf),
   // so this is just picking the right static file, not generating anything.
   function updateDownloadLink(name) {
     var link = document.getElementById("download-pdf-btn");
     var sub = document.getElementById("download-pdf-sub");
-    if (link) link.setAttribute("href", "go-pretty-pdf-docs-" + name + ".pdf");
+    if (link) link.setAttribute("href", "go-pretty-converter-docs-" + name + ".pdf");
     if (sub) {
       var swatchLabel = document.querySelector('.theme-swatch[data-theme="' + name + '"] .theme-swatch-label');
       var displayName = swatchLabel ? swatchLabel.textContent : name;
-      sub.textContent = "in the " + displayName + " theme — rendered by go-pretty-pdf itself";
+      sub.textContent = "in the " + displayName + " theme — rendered by go-pretty-converter itself";
     }
   }
 

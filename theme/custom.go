@@ -36,7 +36,7 @@ func LoadCustomTheme(path string) (*CustomTheme, error) {
 
 // Resolve builds the final CSS for a custom theme. The theme's own YAML
 // fields (colors, fonts, sections, density) act as defaults; opts (usually
-// CLI flags or go-pretty-pdf.yml's theme_options) take priority whenever a
+// CLI flags or go-pretty-converter.yml's theme_options) take priority whenever a
 // field is explicitly set. The theme's raw css field, if any, is appended
 // last so it always wins.
 func (c *CustomTheme) Resolve(opts Options) (string, ResolvedSections, error) {

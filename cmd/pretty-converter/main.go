@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/theme"
-	"github.com/sazardev/go-pretty-pdf/version"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/theme"
+	"github.com/sazardev/go-pretty-converter/version"
 )
 
 func themeNames() []string {
@@ -79,42 +79,43 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "pretty-pdf",
-	Short: "Transform MDX files into beautiful, print-ready PDFs",
+	Use:   "pretty-converter",
+	Short: "The Markdown book toolchain that audits itself before you ship",
 	Long: output.PrimaryStyle.Render(`
-  go-pretty-pdf transforms a directory of Markdown/MDX files into print-ready
-  PDFs (and EPUB 3, and Kindle MOBI/AZW3 via Calibre) via headless Chrome —
-  as a CLI or a Go library.
+  go-pretty-converter transforms a directory of Markdown/MDX files into a print-ready
+  PDF, an EPUB 3, and a Kindle MOBI/AZW3 (via Calibre) — via headless Chrome,
+  as a CLI or a Go library. What sets it apart: it checks its own output.
 
+    • 'analyze' statically flags content that renders poorly across formats
+      (dead links, wide tables, skipped heading levels, ...) before any build
+    • every render runs an automatic quality audit too (overflow, low
+      contrast, broken anchors, unloaded fonts, ...)
+    • one Markdown source → PDF + EPUB + Kindle, no separate pipeline
     • 17 built-in themes over one shared stylesheet, tweakable without CSS
-      via --color-*/--font-*/--density or theme_options in go-pretty-pdf.yml
+      via --color-*/--font-*/--density or theme_options in go-pretty-converter.yml
     • auto table of contents, PDF bookmarks, print-ready sizes (6x9in, A5, mm/in)
-    • automatic quality audit after every render (overflow, low contrast,
-      broken anchors, unloaded fonts, ...)
     • zero-install Chrome: a headless build is downloaded on first render
-    • Kindle output converts through Calibre's ebook-convert (install
-      separately; see 'pretty-pdf kindle --help')
     • no LaTeX, no design tool — Markdown + a binary
 
   Documents are ordered by their [X.Y.Z] frontmatter id, not by filename.
   A missing frontmatter block is fine: id/title are derived from the filename.
 
   Quick start:
-    pretty-pdf init my-book
-    pretty-pdf build --source my-book --out my-book.pdf
-    pretty-pdf check --source my-book
-`) + "\n  " + output.MutedStyle.Render("https://github.com/sazardev/go-pretty-pdf · https://sazardev.github.io/go-pretty-pdf/"),
+    pretty-converter init my-book
+    pretty-converter analyze --source my-book
+    pretty-converter build --source my-book --out my-book.pdf
+`) + "\n  " + output.MutedStyle.Render("https://github.com/sazardev/go-pretty-converter · https://sazardev.github.io/go-pretty-converter/"),
 	Example: `  # one-shot PDF from a docs folder
-  pretty-pdf build --source ./docs --out ./docs.pdf
+  pretty-converter build --source ./docs --out ./docs.pdf
 
   # PDF + EPUB + Kindle in a single pass
-  pretty-pdf build --format pdf,epub,kindle --out mybook
+  pretty-converter build --format pdf,epub,kindle --out mybook
+
+  # catch rendering issues before you build anything
+  pretty-converter analyze --strict --source ./docs
 
   # Kindle only (needs Calibre's ebook-convert)
-  pretty-pdf kindle --source ./docs --out ./docs.mobi
-
-  # validate only — great for CI
-  pretty-pdf check --strict --source ./docs`,
+  pretty-converter kindle --source ./docs --out ./docs.mobi`,
 	SilenceUsage: true,
 }
 
@@ -128,9 +129,9 @@ Use --format to pick output formats (comma-separated): pdf, epub, kindle, or
 any combination (e.g. pdf,epub,kindle). When --out is a base name (no
 extension), the appropriate extension is appended for each format. Chrome is
 only required when PDF is in the format list; kindle requires Calibre's
-ebook-convert on PATH (or --calibre-path / PRETTY_PDF_CALIBRE_PATH).
+ebook-convert on PATH (or --calibre-path / PRETTY_CONVERTER_CALIBRE_PATH).
 
-Pick a theme with --theme (see 'pretty-pdf theme list'), then customize it
+Pick a theme with --theme (see 'pretty-converter theme list'), then customize it
 without writing CSS via --color-*/--font-*/--density, or drop sections with
 --no-cover/--no-toc/--no-page-numbers/--no-header.
 
@@ -143,22 +144,22 @@ Large books: PDF bookmarks and accessibility tagging are the most expensive
 parts of the render — pass --no-outline --no-tagged-pdf to cut build time on
 very big documents (see BENCHMARKS.md for measured numbers).`,
 	Example: `  # one-shot PDF from a docs folder
-  pretty-pdf build --source ./docs --out ./docs.pdf
+  pretty-converter build --source ./docs --out ./docs.pdf
 
   # PDF + EPUB in a single pass (base name gets both extensions)
-  pretty-pdf build --format pdf,epub --out mybook
+  pretty-converter build --format pdf,epub --out mybook
 
   # branded client report
-  pretty-pdf build --theme corporate --color-primary "#0ea5e9" --font-heading "Georgia, serif"
+  pretty-converter build --theme corporate --color-primary "#0ea5e9" --font-heading "Georgia, serif"
 
   # dark theme without cover or page numbers
-  pretty-pdf build --theme dark --no-cover --no-page-numbers
+  pretty-converter build --theme dark --no-cover --no-page-numbers
 
   # everything from a config file (title, author, vars, render settings)
-  pretty-pdf build --config ./go-pretty-pdf.yml
+  pretty-converter build --config ./go-pretty-converter.yml
 
   # machine-readable output for tooling/CI
-  pretty-pdf build --json --quiet`,
+  pretty-converter build --json --quiet`,
 	RunE: runBuild,
 }
 
@@ -172,22 +173,22 @@ heading depth, and content-level warnings. Content warnings are reported but
 do not fail the run; --strict promotes them to errors — the switch for CI gates.
 
 Exit status: 0 when the source is valid, 1 when validation fails.`,
-	Example: `  pretty-pdf check --source ./docs
-  pretty-pdf check --strict --source ./docs   # fail on content warnings too
-  pretty-pdf check --quiet                    # only print errors`,
+	Example: `  pretty-converter check --source ./docs
+  pretty-converter check --strict --source ./docs   # fail on content warnings too
+  pretty-converter check --quiet                    # only print errors`,
 	RunE: runCheck,
 }
 
 var initCmd = &cobra.Command{
 	Use:   "init [directory]",
 	Short: "Scaffold a new book project",
-	Long: `Scaffold a new book project: a sample MDX file, go-pretty-pdf.yml, and the
-directory structure, ready to 'pretty-pdf build' immediately.
+	Long: `Scaffold a new book project: a sample MDX file, go-pretty-converter.yml, and the
+directory structure, ready to 'pretty-converter build' immediately.
 
 Interactive by default: a terminal form asks for title, author, theme, and
 source directory. Pass --bare to skip the form and set everything with flags.`,
-	Example: `  pretty-pdf init my-book
-  pretty-pdf init my-book --bare --title "My Book" --author "Jane Doe" --theme corporate`,
+	Example: `  pretty-converter init my-book
+  pretty-converter init my-book --bare --title "My Book" --author "Jane Doe" --theme corporate`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runInit,
 }
@@ -201,7 +202,7 @@ immediately so the output exists before you edit anything.
 
 Rendering is a PDF build, so Chrome is required. Press Ctrl+C to stop — a
 summary of successful builds and errors is printed on exit.`,
-	Example: `  pretty-pdf watch --source ./book --out ./book.pdf`,
+	Example: `  pretty-converter watch --source ./book --out ./book.pdf`,
 	RunE:    runWatch,
 }
 
@@ -212,7 +213,7 @@ var versionCmd = &cobra.Command{
 		if noColor {
 			output.NoColor()
 		}
-		fmt.Println(output.PrimaryStyle.Render("go-pretty-pdf") + " " + output.MutedStyle.Render(version.Version))
+		fmt.Println(output.PrimaryStyle.Render("go-pretty-converter") + " " + output.MutedStyle.Render(version.Version))
 	},
 }
 
@@ -222,7 +223,7 @@ var serveCmd = &cobra.Command{
 	Long: `Parse the source and serve a live HTML preview with automatic reload on file
 changes, delivered via Server-Sent Events. No Chrome required — the fastest
 way to iterate on content before the final print render.`,
-	Example: `  pretty-pdf serve --source ./book --port 8080`,
+	Example: `  pretty-converter serve --source ./book --port 8080`,
 	RunE:    runServe,
 }
 
@@ -236,9 +237,9 @@ chapter, in the same order as the PDF's table of contents.
 The theme is reused for EPUB (reflowable stylesheet: relative units, no
 print-only rules). --cover-image (or render.cover_image) becomes a full-bleed
 first page, and --language sets the BCP-47 language tag.`,
-	Example: `  pretty-pdf epub --source ./book --out ./book.epub
-  pretty-pdf epub --title "My Book" --author "Jane Doe" --language es
-  pretty-pdf epub --cover-image ./cover.png --out ./book.epub`,
+	Example: `  pretty-converter epub --source ./book --out ./book.epub
+  pretty-converter epub --title "My Book" --author "Jane Doe" --language es
+  pretty-converter epub --cover-image ./cover.png --out ./book.epub`,
 	RunE: runEpub,
 }
 
@@ -247,17 +248,17 @@ var kindleCmd = &cobra.Command{
 	Short: "Build a Kindle-ready ebook (MOBI/AZW3) from MDX source files",
 	Long: `Parse MDX files, validate them, and convert them into a Kindle-ready
 ebook file — no Chrome/Chromium required, unlike 'build'. Internally this
-builds the same EPUB 'pretty-pdf epub' would produce, then converts it with
+builds the same EPUB 'pretty-converter epub' would produce, then converts it with
 Calibre's ebook-convert (Amazon retired its own KindleGen tool in 2022;
 Calibre is the standard replacement) — so Calibre must be installed with
 ebook-convert reachable on PATH, or pointed to explicitly with
---calibre-path / PRETTY_PDF_CALIBRE_PATH.
+--calibre-path / PRETTY_CONVERTER_CALIBRE_PATH.
 
 The target format (MOBI, AZW3, ...) is inferred from --out's extension;
 defaults to .mobi, the most broadly compatible Kindle format.`,
-	Example: `  pretty-pdf kindle --source ./book --out ./book.mobi
-  pretty-pdf kindle --title "My Book" --author "Jane Doe" --language es
-  pretty-pdf kindle --out ./book.azw3   # modern Kindle format (KF8)`,
+	Example: `  pretty-converter kindle --source ./book --out ./book.mobi
+  pretty-converter kindle --title "My Book" --author "Jane Doe" --language es
+  pretty-converter kindle --out ./book.azw3   # modern Kindle format (KF8)`,
 	RunE: runKindle,
 }
 
@@ -286,10 +287,10 @@ formats. Findings are grouped into three severities:
 
 Exit status: 0 unless errors are found; --strict also fails on warnings —
 the switch for CI gates.`,
-	Example: `  pretty-pdf analyze --source ./docs
-  pretty-pdf analyze --strict --source ./docs    # fail on warnings too
-  pretty-pdf analyze --json --quiet              # machine-readable output
-  pretty-pdf analyze --max-table-columns 4 --long-chapter-words 5000`,
+	Example: `  pretty-converter analyze --source ./docs
+  pretty-converter analyze --strict --source ./docs    # fail on warnings too
+  pretty-converter analyze --json --quiet              # machine-readable output
+  pretty-converter analyze --max-table-columns 4 --long-chapter-words 5000`,
 	RunE: runAnalyze,
 }
 
@@ -308,9 +309,9 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "path to config file")
 	rootCmd.PersistentFlags().StringVar(&sourceDir, "source", "book", "source MDX directory")
-	rootCmd.PersistentFlags().StringVar(&chromePath, "chrome-path", os.Getenv("PRETTY_PDF_CHROME_PATH"),
+	rootCmd.PersistentFlags().StringVar(&chromePath, "chrome-path", os.Getenv("PRETTY_CONVERTER_CHROME_PATH"),
 		"path to a Chrome/Chromium executable (skips auto-detection/download)")
-	rootCmd.PersistentFlags().StringVar(&calibrePath, "calibre-path", os.Getenv("PRETTY_PDF_CALIBRE_PATH"),
+	rootCmd.PersistentFlags().StringVar(&calibrePath, "calibre-path", os.Getenv("PRETTY_CONVERTER_CALIBRE_PATH"),
 		"path to Calibre's ebook-convert executable (skips PATH auto-detection), used by --format kindle / the kindle command")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output")
@@ -357,7 +358,7 @@ func init() {
 
 	initCmd.Flags().BoolVar(&initBare, "bare", false, "non-interactive init with flags")
 	initCmd.Flags().StringVar(&title, "title", "My Book", "book title (for --bare)")
-	initCmd.Flags().StringVar(&author, "author", "go-pretty-pdf", "book author (for --bare)")
+	initCmd.Flags().StringVar(&author, "author", "go-pretty-converter", "book author (for --bare)")
 	initCmd.Flags().StringVar(&themeName, "theme", defaultTheme, "book theme (for --bare)")
 	initCmd.Flags().BoolVar(&jsonOutput, "json", false, "output as JSON")
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 func TestExtractThemeVars(t *testing.T) {

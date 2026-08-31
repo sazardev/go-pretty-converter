@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sazardev/go-pretty-pdf/analyze"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
+	"github.com/sazardev/go-pretty-converter/analyze"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
 )
 
 func analyzeOptsFromFlags() analyze.Options {

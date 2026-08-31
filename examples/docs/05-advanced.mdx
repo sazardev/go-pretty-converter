@@ -11,14 +11,14 @@ depends_on: ["[2.0.0]"]
 
 # Advanced Usage
 
-go-pretty-pdf is extensible via custom components and validators.
+go-pretty-converter is extensible via custom components and validators.
 
 ## Custom Components
 
 Register custom MDX components using `WithComponent`:
 
 ```go
-prettypdf.WithComponent("Callout", func(attrs map[string]string, inner string) string {
+prettyconverter.WithComponent("Callout", func(attrs map[string]string, inner string) string {
     return fmt.Sprintf(
         `<div class="callout callout-%s">%s</div>`,
         attrs["title"], inner,
@@ -88,5 +88,5 @@ This paragraph uses inline styles via raw HTML.
 </blockquote>
 
 <Axiom>
-Flexibility at every layer — from components to validators to templates — means go-pretty-pdf adapts to your documentation workflow, not the other way around.
+Flexibility at every layer — from components to validators to templates — means go-pretty-converter adapts to your documentation workflow, not the other way around.
 </Axiom>

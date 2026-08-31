@@ -6,12 +6,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf/output"
-	"github.com/sazardev/go-pretty-pdf/config"
-	"github.com/sazardev/go-pretty-pdf/epub"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/cmd/pretty-converter/output"
+	"github.com/sazardev/go-pretty-converter/config"
+	"github.com/sazardev/go-pretty-converter/epub"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 func runEpub(cmd *cobra.Command, args []string) error {
@@ -30,7 +30,7 @@ func runEpub(cmd *cobra.Command, args []string) error {
 	// mirroring how `build --format epub` derives its output path.
 	epubOutputPath := epubOutPath
 	if !cmd.Flags().Changed("out") && cfg.Output != "" {
-		epubOutputPath = resolveOutputPaths(cfg.Output, []prettypdf.OutputFormat{prettypdf.FormatEPUB})[prettypdf.FormatEPUB]
+		epubOutputPath = resolveOutputPaths(cfg.Output, []prettyconverter.OutputFormat{prettyconverter.FormatEPUB})[prettyconverter.FormatEPUB]
 	}
 
 	if !quiet {

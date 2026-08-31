@@ -1,4 +1,4 @@
-module github.com/sazardev/go-pretty-pdf
+module github.com/sazardev/go-pretty-converter
 
 go 1.26
 

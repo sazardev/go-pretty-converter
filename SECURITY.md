@@ -19,7 +19,7 @@ We aim to respond within 5 business days and publish fixes as patch releases.
 
 ## Scope
 
-`go-pretty-pdf` uses headless Chrome for PDF rendering. While we pass the
+`go-pretty-converter` uses headless Chrome for PDF rendering. While we pass the
 `--no-sandbox` flag for compatibility in CI environments, we recommend
 running in sandboxed mode for production deployments that process
 untrusted HTML content.

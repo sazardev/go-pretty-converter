@@ -46,8 +46,8 @@ jobs:
 
       - name: Build demo PDF (full-demo CLI)
         run: |
-          go build -o pretty-pdf ./cmd/pretty-pdf
-          ./pretty-pdf build --config examples/full-demo/go-pretty-pdf.yml --source examples/full-demo --out examples/full-demo/demo.pdf
+          go build -o pretty-converter ./cmd/pretty-converter
+          ./pretty-converter build --config examples/full-demo/go-pretty-converter.yml --source examples/full-demo --out examples/full-demo/demo.pdf
 
       - name: Stage pages artifact
         run: |

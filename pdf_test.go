@@ -1,4 +1,4 @@
-package prettypdf
+package prettyconverter
 
 import (
 	"archive/zip"
@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sazardev/go-pretty-pdf/config"
-	"github.com/sazardev/go-pretty-pdf/mdx"
-	"github.com/sazardev/go-pretty-pdf/render"
-	"github.com/sazardev/go-pretty-pdf/theme"
+	"github.com/sazardev/go-pretty-converter/config"
+	"github.com/sazardev/go-pretty-converter/mdx"
+	"github.com/sazardev/go-pretty-converter/render"
+	"github.com/sazardev/go-pretty-converter/theme"
 )
 
 const testSourceDir = "src"

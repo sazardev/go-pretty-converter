@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	prettypdf "github.com/sazardev/go-pretty-pdf"
-	"github.com/sazardev/go-pretty-pdf/config"
-	"github.com/sazardev/go-pretty-pdf/mdx"
+	prettyconverter "github.com/sazardev/go-pretty-converter"
+	"github.com/sazardev/go-pretty-converter/config"
+	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
 const (
@@ -163,20 +163,20 @@ func loadConfig(cmd *cobra.Command) (*config.Config, error) {
 	return cfg, nil
 }
 
-func buildOpts(cfg *config.Config, chromeExecPath, calibreExecPath string) []prettypdf.Option {
-	opts := []prettypdf.Option{
-		prettypdf.WithVerbose(verbose),
-		prettypdf.WithFullConfig(cfg),
-		prettypdf.WithNetworkAccess(cfg.ThemeOptions.AllowNetworkFonts),
-		prettypdf.WithValidator(validatorFromConfig(cfg)),
-		prettypdf.WithChromeExecPath(chromeExecPath),
-		prettypdf.WithCalibreExecPath(calibreExecPath),
+func buildOpts(cfg *config.Config, chromeExecPath, calibreExecPath string) []prettyconverter.Option {
+	opts := []prettyconverter.Option{
+		prettyconverter.WithVerbose(verbose),
+		prettyconverter.WithFullConfig(cfg),
+		prettyconverter.WithNetworkAccess(cfg.ThemeOptions.AllowNetworkFonts),
+		prettyconverter.WithValidator(validatorFromConfig(cfg)),
+		prettyconverter.WithChromeExecPath(chromeExecPath),
+		prettyconverter.WithCalibreExecPath(calibreExecPath),
 	}
 	if noOutline {
-		opts = append(opts, prettypdf.WithGenerateDocumentOutline(false))
+		opts = append(opts, prettyconverter.WithGenerateDocumentOutline(false))
 	}
 	if noTagged {
-		opts = append(opts, prettypdf.WithGenerateTaggedPDF(false))
+		opts = append(opts, prettyconverter.WithGenerateTaggedPDF(false))
 	}
 	return opts
 }

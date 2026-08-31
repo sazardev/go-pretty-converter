@@ -11,7 +11,7 @@ depends_on: ["[1.1.0]"]
 
 # Installation
 
-Detailed installation steps for getting go-pretty-pdf running on your system.
+Detailed installation steps for getting go-pretty-converter running on your system.
 
 ## Prerequisites
 
@@ -21,23 +21,23 @@ Detailed installation steps for getting go-pretty-pdf running on your system.
 ## Install the CLI
 
 ```bash
-go install github.com/sazardev/go-pretty-pdf/cmd/pretty-pdf@latest
+go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest
 ```
 
 ## Verify
 
 ```bash
-pretty-pdf version
+pretty-converter version
 ```
 
 ## Using as a Library
 
 ```go
-import prettypdf "github.com/sazardev/go-pretty-pdf"
+import prettyconverter "github.com/sazardev/go-pretty-converter"
 
-pdf, _ := prettypdf.New(
-    prettypdf.WithSourceDir("book"),
-    prettypdf.WithTitle("My Book"),
+pdf, _ := prettyconverter.New(
+    prettyconverter.WithSourceDir("book"),
+    prettyconverter.WithTitle("My Book"),
 )
 pdf.Build(ctx)
 ```
@@ -48,7 +48,7 @@ Simplicity is the prerequisite for reliability.
 
 ## Variable Substitution
 
-Define variables in `go-pretty-pdf.yml` under `vars:` and reference them
+Define variables in `go-pretty-converter.yml` under `vars:` and reference them
 in your MDX with `{{variable_name}}`. Use variables for API versions,
 company names, URLs, or any text that changes across documents.
 

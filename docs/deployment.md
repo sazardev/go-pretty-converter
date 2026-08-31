@@ -1,6 +1,6 @@
 # Deployment, caching & performance
 
-How the `go-pretty-pdf` site is served, how its caching/compression/security
+How the `go-pretty-converter` site is served, how its caching/compression/security
 config is prepared, and how to verify it. This is operational documentation
 for anyone self-hosting the generated `_site/` — the same static site the
 `docs.yml` workflow deploys to GitHub Pages.
@@ -51,7 +51,7 @@ by docsgen. Rules (Cloudflare Pages / Netlify `_headers` syntax):
 |---|---|
 | `/*` (base) | `public, max-age=0, must-revalidate` |
 | `/*.html` | `public, max-age=0, must-revalidate` |
-| `/go-pretty-pdf-docs-*.pdf` / `.epub`, `/library-demo.pdf`, `/full-demo.pdf` | `public, max-age=86400, stale-while-revalidate=604800` |
+| `/go-pretty-converter-docs-*.pdf` / `.epub`, `/library-demo.pdf`, `/full-demo.pdf` | `public, max-age=86400, stale-while-revalidate=604800` |
 | `/og-image.png`, `site.webmanifest` | `public, max-age=86400, stale-while-revalidate=604800` |
 | icons (`apple-touch-icon.png`, `favicon-32.png`, `icon-192/512.png`, `favicon.svg`) | `public, max-age=86400, immutable` |
 | `llms.txt`, `llms-full.txt`, `humans.txt`, `version.json` | `public, max-age=3600` |
