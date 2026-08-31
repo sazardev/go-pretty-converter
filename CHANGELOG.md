@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-31
+
 ### Changed
 
 - **BREAKING: project renamed `go-pretty-pdf` → `go-pretty-converter`.** The tool now builds PDF, EPUB, and Kindle from one Markdown source, so "pdf" in the name no longer described what it does. Everything moved: Go module path (`github.com/sazardev/go-pretty-pdf` → `github.com/sazardev/go-pretty-converter`), root package (`prettypdf` → `prettyconverter`), CLI binary/command (`pretty-pdf` → `pretty-converter`), default config filename (`go-pretty-pdf.yml` → `go-pretty-converter.yml`), and the `PRETTY_PDF_CHROME_PATH`/`PRETTY_PDF_CALIBRE_PATH` env vars (→ `PRETTY_CONVERTER_CHROME_PATH`/`PRETTY_CONVERTER_CALIBRE_PATH`). Existing installs: `go install github.com/sazardev/go-pretty-converter/cmd/pretty-converter@latest`; existing `go-pretty-pdf.yml` files should be renamed to `go-pretty-converter.yml` (or passed explicitly via `--config`).
@@ -310,6 +312,7 @@ Known limitation: Chrome reserves a small, fixed ~0.2in strip at the very top/bo
 - GitHub Actions CI (lint, test, vet, build on 3 OS) and release pipeline (goreleaser)
 - Local Makefile with lint, test, build, and release-dry-run targets
 
+[0.12.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.12.0
 [0.11.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.11.0
 [0.10.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.10.0
 [0.9.0]: https://github.com/sazardev/go-pretty-converter/releases/tag/v0.9.0
