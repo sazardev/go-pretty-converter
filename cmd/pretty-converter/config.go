@@ -19,7 +19,35 @@ const (
 	unknownFileSize   = "unknown"
 )
 
+// applyFastMode is --fast's implementation: a shorthand for the four
+// existing speed flags (--no-header --no-page-numbers --no-outline
+// --no-tagged-pdf) together, since remembering and typing all four is the
+// actual barrier to using them — see BENCHMARKS.md for why header/footer
+// (page numbers) is now measured as the single most expensive post-print
+// step, ahead of outline+tagging combined. Only forces a flag the user
+// didn't already set explicitly, so e.g. `--fast --no-page-numbers=false`
+// still keeps page numbers.
+func applyFastMode(cmd *cobra.Command) {
+	if !fastMode {
+		return
+	}
+	if !cmd.Flags().Changed("no-header") {
+		noHeader = true
+	}
+	if !cmd.Flags().Changed("no-page-numbers") {
+		noPageNumbers = true
+	}
+	if !cmd.Flags().Changed("no-outline") {
+		noOutline = true
+	}
+	if !cmd.Flags().Changed("no-tagged-pdf") {
+		noTagged = true
+	}
+}
+
 func loadConfig(cmd *cobra.Command) (*config.Config, error) {
+	applyFastMode(cmd)
+
 	cfg := config.Default()
 
 	configPath := cfgFile
@@ -105,10 +133,10 @@ func loadConfig(cmd *cobra.Command) (*config.Config, error) {
 	if cmd.Flags().Changed("no-toc") {
 		cfg.ThemeOptions.Sections.TOC = boolPtr(!noTOC)
 	}
-	if cmd.Flags().Changed("no-page-numbers") {
+	if cmd.Flags().Changed("no-page-numbers") || fastMode {
 		cfg.ThemeOptions.Sections.PageNumbers = boolPtr(!noPageNumbers)
 	}
-	if cmd.Flags().Changed("no-header") {
+	if cmd.Flags().Changed("no-header") || fastMode {
 		cfg.ThemeOptions.Sections.Header = boolPtr(!noHeader)
 	}
 	if cmd.Flags().Changed("color-primary") {

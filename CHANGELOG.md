@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--fast` build flag**: shorthand for `--no-header --no-page-numbers --no-outline --no-tagged-pdf`, measured 40-44% faster than the default on books over ~500 documents (and ~20% faster even at 100 docs) — see `BENCHMARKS.md`'s new "Fast mode" section for the full phase-level breakdown. An individual flag among the four still overrides `--fast` (e.g. `--fast --no-page-numbers=false`).
+- **`PRETTY_CONVERTER_DEBUG_TIMING=1`**: prints a per-phase timing breakdown (navigate, DOM audit, `PrintToPDF`, output write, PDF-byte audit) to stderr for any `build` render — the tool used to discover and quantify the `--fast` findings below, now available to anyone profiling their own document.
+- `scripts/benchmark` now also runs a `pdf-fast` export (`build --fast`) alongside the default `pdf` export at every book size, so every benchmark run reports the tradeoff automatically.
+
+### Fixed
+
+- **BREAKING (behavioral): theme/section/color/font overrides now apply even without an explicit `--theme` flag.** `WithConfigCSSAndTemplate` used to skip theme resolution entirely whenever no theme name was set (no `--theme` flag and no `theme:` key in `go-pretty-converter.yml`) — even though `theme.ResolveByName` already falls back to the builtin `default` theme for an empty name on its own. The effect: `--no-header`, `--no-page-numbers`, `--no-cover`, `--no-toc`, `--color-*`, `--font-*`, and `--density` were **silently no-ops** on a bare `build`/`epub`/`kindle` invocation without an accompanying `--theme` flag — the common case. They now apply correctly in every case. If you were relying on one of these flags appearing to do nothing without `--theme`, it will now visibly take effect.
+- **Corrected performance guidance**: PDF bookmarks/outline generation (`--no-outline` / `WithGenerateDocumentOutline`) was documented as "a significant chunk of render time" and "faster on very large documents" — measured cost is actually near-zero (~50ms on a 3,000-doc book) and was never the real lever. Page numbers/running header (no prior opt-out flag combination documented for this) turned out to cost *more* than bookmarks and accessibility tagging combined; see `--fast` above and `BENCHMARKS.md`.
+
 ## [0.12.0] - 2026-08-31
 
 ### Changed

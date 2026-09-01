@@ -43,15 +43,17 @@ type Options struct {
 	// behavior exactly.
 	ChromeExecPath string
 	// GenerateDocumentOutline, when true, asks Chrome to build the PDF
-	// bookmarks/outline tree from the document's headings. This is
-	// post-print work over the entire PDF and can be a significant chunk
-	// of render time on very large documents. Defaults to true (bookmarks
-	// are a headline feature); set false to trade them for speed.
+	// bookmarks/outline tree from the document's headings. Measured cost is
+	// near-zero even on very large documents (~50ms on a 3,000-doc book —
+	// see BENCHMARKS.md); this is not a meaningful speed lever on its own.
+	// Defaults to true (bookmarks are a headline feature).
 	GenerateDocumentOutline bool
 	// GenerateTaggedPDF, when true, asks Chrome to tag the PDF with
-	// accessibility structure (PDF/UA). This is post-print work over the
-	// entire PDF — the most expensive of the post-print steps on huge
-	// documents. Defaults to true (accessibility is valuable); set false
+	// accessibility structure (PDF/UA). This is real post-print work over
+	// the entire PDF (~15-18% of render time on a 3,000-doc book), though
+	// header/footer page numbers (see ShowHeader/PageNumbers) cost even
+	// more — see BENCHMARKS.md's "Fast mode" section for the full
+	// breakdown. Defaults to true (accessibility is valuable); set false
 	// for a meaningful speedup on very large documents.
 	GenerateTaggedPDF bool
 }
@@ -193,6 +195,8 @@ func RenderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string,
 // htmlContent into outputPath on the given browser context. The caller is
 // responsible for wrapping browserCtx with any timeout.
 func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string, outputPath string, opts Options) (*AuditReport, error) {
+	logTiming := debugTimingLogger()
+
 	// Resolved and validated up front, before spinning up a browser at
 	// all, so a bad --cover-image path fails fast with a clear error
 	// instead of after a full Chrome launch.
@@ -289,6 +293,8 @@ func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string,
 	// entirely when the caller wants neither a header nor page numbers —
 	// pair with MarginTop/Bottom: 0 for a genuinely gap-free page.
 	needsHeaderFooter := opts.ShowHeader || opts.PageNumbers
+	logTiming("options: header=%v pageNumbers=%v outline=%v taggedPDF=%v",
+		opts.ShowHeader, opts.PageNumbers, opts.GenerateDocumentOutline, opts.GenerateTaggedPDF)
 
 	var coverPDFBuf []byte
 	if opts.CoverImagePath != "" {
@@ -300,16 +306,22 @@ func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string,
 		tasks = append(tasks, coverTasks...)
 	}
 
+	var tNav, tAudit, tPrint time.Time
 	tasks = append(tasks,
+		chromedp.ActionFunc(func(ctx context.Context) error { tNav = time.Now(); return nil }),
 		chromedp.Navigate(navURL),
 		chromedp.ActionFunc(func(ctx context.Context) error {
+			logTiming("navigate: %s", time.Since(tNav))
+			tAudit = time.Now()
 			// Runs against the fully-loaded document, before PrintToPDF
 			// hands it to Chrome's print engine — see audit.go for what it
 			// checks and why it has to happen here rather than after.
 			domIssues = runDOMAudit(ctx, needsHeaderFooter)
+			logTiming("dom-audit: %s (%d issues)", time.Since(tAudit), len(domIssues))
 			return nil
 		}),
 		chromedp.ActionFunc(func(ctx context.Context) error {
+			tPrint = time.Now()
 			var err error
 			pdfBuf, _, err = page.PrintToPDF().
 				WithPrintBackground(true).
@@ -325,14 +337,18 @@ func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string,
 				WithPaperWidth(opts.PaperWidth).
 				WithPaperHeight(opts.PaperHeight).
 				Do(ctx)
+			logTiming("printToPDF: %s (%d bytes)", time.Since(tPrint), len(pdfBuf))
 			return err
 		}),
 	)
 
+	tRun := time.Now()
 	if err := chromedp.Run(browserCtx, tasks...); err != nil {
 		return nil, fmt.Errorf("chromedp render: %w", err)
 	}
+	logTiming("chromedp.Run total: %s", time.Since(tRun))
 
+	tWrite := time.Now()
 	if opts.CoverImagePath != "" {
 		if err := mergeCoverAndBody(coverPDFBuf, pdfBuf, outputPath); err != nil {
 			return nil, err
@@ -345,9 +361,31 @@ func renderToPDFWithAuditBrowser(browserCtx context.Context, htmlContent string,
 			return nil, fmt.Errorf("writing PDF: %w", err)
 		}
 	}
+	logTiming("write output: %s", time.Since(tWrite))
 
-	report := &AuditReport{Issues: append(domIssues, auditPDFBytes(pdfBuf)...)}
+	tPDFAudit := time.Now()
+	pdfIssues := auditPDFBytes(pdfBuf)
+	logTiming("auditPDFBytes: %s", time.Since(tPDFAudit))
+
+	report := &AuditReport{Issues: append(domIssues, pdfIssues...)}
 	return report, nil
+}
+
+// debugTimingLogger returns a logger that prints render phase durations to
+// stderr when PRETTY_CONVERTER_DEBUG_TIMING is set (to any non-empty
+// value), or a no-op otherwise. A lightweight, dependency-free way to see
+// exactly where a render's wall time goes (navigate, DOM audit, PrintToPDF,
+// write, PDF-byte audit) without an external profiler — this is what
+// revealed that header/footer (page numbers) costs more than outline and
+// tagged-PDF generation combined on large documents; see BENCHMARKS.md and
+// the --fast flag.
+func debugTimingLogger() func(format string, args ...any) {
+	if os.Getenv("PRETTY_CONVERTER_DEBUG_TIMING") == "" {
+		return func(string, ...any) {}
+	}
+	return func(format string, args ...any) {
+		fmt.Fprintf(os.Stderr, "[timing] "+format+"\n", args...)
+	}
 }
 
 // styleBlockRe extracts the content of the first <style>...</style> element

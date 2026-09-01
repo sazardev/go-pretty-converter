@@ -385,6 +385,47 @@ func TestWithFullConfig(t *testing.T) {
 	}
 }
 
+// TestWithFullConfigSectionTogglesWithoutExplicitTheme guards against a real
+// regression: WithConfigCSSAndTemplate used to skip applyTheme entirely
+// whenever cfg.Theme was "" (no --theme flag and no theme: key in
+// go-pretty-converter.yml) — even though theme.ResolveByName already falls
+// back to the builtin "default" theme for an empty name on its own. Skipping
+// the call meant every theme_options override (section toggles, colors,
+// fonts, density) was silently dropped for the very common case of a bare
+// `build`/`epub`/`kindle` invocation with just e.g. --no-header and no
+// --theme. applyTheme must always run so these overrides land regardless.
+func TestWithFullConfigSectionTogglesWithoutExplicitTheme(t *testing.T) {
+	cfg := &config.Config{
+		Source: testSourceDir,
+		// Theme deliberately left "" — the exact condition that used to
+		// suppress every override below.
+		ThemeOptions: config.ThemeOptionsConfig{
+			Sections: config.SectionsConfig{
+				PageNumbers: theme.BoolPtr(false),
+				Header:      theme.BoolPtr(false),
+			},
+			Colors: config.ColorsConfig{Primary: "#123456"},
+		},
+	}
+
+	p, err := New(WithFullConfig(cfg))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Theme != "" {
+		t.Fatalf("test setup: expected cfg.Theme to stay empty, got %q", cfg.Theme)
+	}
+	if p.renderOpts.PageNumbers {
+		t.Error("expected PageNumbers override (false) to apply without an explicit --theme")
+	}
+	if p.renderOpts.ShowHeader {
+		t.Error("expected ShowHeader override (false) to apply without an explicit --theme")
+	}
+	if !strings.Contains(p.composeOpts.CSS, "#123456") {
+		t.Error("expected the color-primary override to reach the resolved CSS without an explicit --theme")
+	}
+}
+
 // TestWithFullConfigExplicitZeroMargin guards against a real regression:
 // WithFullConfig used to detect "was a margin configured?" by checking
 // whether the *parsed* value was non-zero, which made an explicit

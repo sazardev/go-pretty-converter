@@ -232,9 +232,12 @@ func WithTimeout(d time.Duration) Option {
 }
 
 // WithGenerateDocumentOutline toggles whether PDF bookmarks/outline are
-// built from the document's headings. Building the outline is post-print
-// work over the whole PDF; disable for a meaningful speedup on very large
-// documents at the cost of losing in-PDF navigation bookmarks.
+// built from the document's headings. Measured cost is near-zero even on
+// very large documents (~50ms on a 3,000-doc/3,533-page book — see
+// BENCHMARKS.md) — disabling it barely moves render time; it exists mainly
+// for the (rare) case where in-PDF navigation bookmarks aren't wanted at
+// all, not as a speed lever. For an actual speedup on large documents, see
+// WithGenerateTaggedPDF or the CLI's --fast flag.
 func WithGenerateDocumentOutline(enabled bool) Option {
 	return func(p *PDF) {
 		p.renderOpts.GenerateDocumentOutline = enabled
@@ -242,7 +245,8 @@ func WithGenerateDocumentOutline(enabled bool) Option {
 }
 
 // WithGenerateTaggedPDF toggles PDF accessibility tagging (PDF/UA). Tagging
-// is the most expensive post-print step on large documents; disable for a
+// is real post-print work (~15-18% of render time on a 3,000-doc book — see
+// BENCHMARKS.md), though page numbers/header cost even more; disable for a
 // real speedup when accessibility metadata isn't needed.
 func WithGenerateTaggedPDF(enabled bool) Option {
 	return func(p *PDF) {
@@ -395,9 +399,15 @@ func themeOptionsFromConfig(cfg *config.Config) theme.Options {
 // have been applied, so ordering relative to WithVerbose does not matter.
 func WithConfigCSSAndTemplate(cfg *config.Config) Option {
 	return func(p *PDF) {
-		if cfg.Theme != "" {
-			p.applyTheme(cfg.Theme, themeOptionsFromConfig(cfg))
-		}
+		// Always resolves a theme, even when cfg.Theme is "" (no --theme
+		// flag and no theme: key in go-pretty-converter.yml) — ResolveByName
+		// itself already falls back to the builtin "default" theme for an
+		// empty name, and skipping this call entirely used to silently drop
+		// every theme_options override (section toggles, colors, fonts,
+		// density) whenever the caller didn't also set an explicit theme,
+		// which is the common case for a bare `build`/`epub`/`kindle`
+		// invocation with just --no-header/--color-primary/etc.
+		p.applyTheme(cfg.Theme, themeOptionsFromConfig(cfg))
 		if cfg.CSS != "" {
 			data, err := os.ReadFile(cfg.CSS)
 			if err == nil {

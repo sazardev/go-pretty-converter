@@ -505,6 +505,11 @@ func main() {
 			{"check", fmt.Sprintf("check --source %s", srcDir), ""},
 			{"epub", fmt.Sprintf("epub --source %s --out %s/book-%d.epub", srcDir, workDir, n), filepath.Join(workDir, fmt.Sprintf("book-%d.epub", n))},
 			{"pdf", fmt.Sprintf("build --source %s --out %s/book-%d.pdf", srcDir, workDir, n), filepath.Join(workDir, fmt.Sprintf("book-%d.pdf", n))},
+			// --fast is the shorthand for --no-header --no-page-numbers
+			// --no-outline --no-tagged-pdf — run alongside the default "pdf"
+			// export so every benchmark run quantifies the tradeoff instead
+			// of leaving it to a one-off measurement.
+			{"pdf-fast", fmt.Sprintf("build --source %s --out %s/book-%d-fast.pdf --fast", srcDir, workDir, n), filepath.Join(workDir, fmt.Sprintf("book-%d-fast.pdf", n))},
 		}
 		for _, ex := range exports {
 			label := fmt.Sprintf("export %s · %d docs", ex.kind, n)

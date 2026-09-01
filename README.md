@@ -142,15 +142,18 @@ for details.
 
 `go-pretty-converter` keeps the Go-side pipeline (parse + validate + compose)
 sub-second even on large books; headless Chrome's print step is what drives
-PDF wall time. Measured on an i5-13500 (WSL2) with Chromium 150:
+PDF wall time. Measured on a Ryzen 5 3600 with Chrome 152:
 
-| Source docs | `check` | `epub` | PDF pages | PDF wall time | PDF throughput |
-|------------:|--------:|-------:|----------:|--------------:|---------------:|
-| 100         | 30 ms   | 27 ms  | 121       | 0.57 s        | 211 pages/s    |
-| 1,000       | 62 ms   | 88 ms  | 1,180     | 2.99 s        | 394 pages/s    |
-| 3,000       | 142 ms  | 248 ms | 3,535     | 23.02 s       | 154 pages/s    |
+| Source docs | `check` | `epub` | PDF pages | PDF wall time | `--fast` wall time |
+|------------:|--------:|-------:|----------:|--------------:|--------------------:|
+| 100         | 55 ms   | 64 ms  | 121       | 0.55 s        | 0.43 s               |
+| 1,000       | 112 ms  | 156 ms | 1,179     | 2.46 s        | 1.37 s               |
+| 3,000       | 221 ms  | 362 ms | 3,533     | 12.19 s       | 6.86 s               |
 
-Full table, hardware, and a reproducible recipe:
+`--fast` (shorthand for `--no-header --no-page-numbers --no-outline
+--no-tagged-pdf`) cuts wall time 40-44% on books over ~500 docs — page
+numbers/header alone cost more than bookmarks and accessibility tagging
+combined. Full breakdown, hardware, and a reproducible recipe:
 [BENCHMARKS.md](BENCHMARKS.md). To measure your own machine:
 
 ```bash

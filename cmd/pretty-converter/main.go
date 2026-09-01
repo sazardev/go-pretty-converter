@@ -52,6 +52,7 @@ var (
 	noHeader          bool
 	noOutline         bool
 	noTagged          bool
+	fastMode          bool
 	colorPrimary      string
 	colorAccent       string
 	colorText         string
@@ -140,11 +141,16 @@ look (overflow, low contrast, broken anchors, unloaded fonts, empty output, ...)
 and the summary's Warnings count mirrors it. The audit is advisory: a
 non-zero Warnings count does not fail the build.
 
-Large books: PDF bookmarks and accessibility tagging are the most expensive
-parts of the render — pass --no-outline --no-tagged-pdf to cut build time on
-very big documents (see BENCHMARKS.md for measured numbers).`,
+Large books: page numbers/header (Chrome renders them per-page) are the
+single most expensive part of the render, ahead of bookmarks and
+accessibility tagging combined — pass --fast (shorthand for --no-header
+--no-page-numbers --no-outline --no-tagged-pdf) to cut build time on very
+big documents (see BENCHMARKS.md for measured numbers).`,
 	Example: `  # one-shot PDF from a docs folder
   pretty-converter build --source ./docs --out ./docs.pdf
+
+  # large book, optimized for speed (drops page numbers/header/bookmarks/tagging)
+  pretty-converter build --source ./docs --out ./docs.pdf --fast
 
   # PDF + EPUB in a single pass (base name gets both extensions)
   pretty-converter build --format pdf,epub --out mybook
@@ -336,6 +342,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&noHeader, "no-header", false, "omit the running page header")
 	buildCmd.Flags().BoolVar(&noOutline, "no-outline", false, "skip PDF bookmarks/outline (faster on very large documents)")
 	buildCmd.Flags().BoolVar(&noTagged, "no-tagged-pdf", false, "skip PDF accessibility tagging (faster on very large documents)")
+	buildCmd.Flags().BoolVar(&fastMode, "fast", false, "shorthand for --no-header --no-page-numbers --no-outline --no-tagged-pdf (biggest speedup on very large documents); an explicit flag among these still wins")
 	buildCmd.Flags().StringVar(&colorPrimary, "color-primary", "", "theme override: primary color (e.g. #1a56db)")
 	buildCmd.Flags().StringVar(&colorAccent, "color-accent", "", "theme override: accent color")
 	buildCmd.Flags().StringVar(&colorText, "color-text", "", "theme override: body text color")

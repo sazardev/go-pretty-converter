@@ -62,8 +62,9 @@ pretty-converter build [flags]
 | `--no-toc` | `false` | Omit the table of contents |
 | `--no-page-numbers` | `false` | Omit page numbers |
 | `--no-header` | `false` | Omit the running page header |
-| `--no-outline` | `false` | Skip PDF bookmarks/outline — faster on very large documents |
+| `--no-outline` | `false` | Skip PDF bookmarks/outline (measured near-zero cost on its own — see BENCHMARKS.md) |
 | `--no-tagged-pdf` | `false` | Skip PDF accessibility tagging (PDF/UA) — faster on very large documents |
+| `--fast` | `false` | Shorthand for `--no-header --no-page-numbers --no-outline --no-tagged-pdf` — 40-44% faster on large books; an explicit flag among these still wins |
 | `--color-primary` | `""` | Theme override: primary color (e.g. `#1a56db`) |
 | `--color-accent` | `""` | Theme override: accent color |
 | `--color-text` | `""` | Theme override: body text color |
