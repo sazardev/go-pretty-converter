@@ -326,6 +326,7 @@ pretty-converter build     Build a PDF from MDX source files
 pretty-converter epub      Build an EPUB from MDX source files (no Chrome required)
 pretty-converter kindle    Build a Kindle-ready MOBI/AZW3 file (needs Calibre's ebook-convert)
 pretty-converter check     Validate MDX files without building
+pretty-converter format    Convert raw .txt into structured .mdx files (heuristic, no AI)
 pretty-converter analyze   Static cross-format rendering-quality analysis (no Chrome/Calibre)
 pretty-converter theme     List, inspect, and manage themes
 pretty-converter init      Scaffold a new book project (interactive wizard)

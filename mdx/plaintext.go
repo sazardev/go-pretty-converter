@@ -28,9 +28,13 @@ func splitTxtName(base string) (major int, rest string, ok bool) {
 	return n, m[2], true
 }
 
-// humanizeTitle turns a filename fragment like "getting-started" into
-// "Getting Started" for use as an auto-generated document title.
-func humanizeTitle(name string) string {
+// HumanizeTitle turns a filename fragment like "getting-started" into
+// "Getting Started" for use as an auto-generated document title. Exported
+// so other packages that auto-derive titles from raw names (e.g. the
+// format package, deriving a fallback title for a headingless chapter) get
+// the exact same casing convention as ParseDir's own auto-numbering, rather
+// than reimplementing it slightly differently.
+func HumanizeTitle(name string) string {
 	name = strings.NewReplacer("-", " ", "_", " ").Replace(strings.TrimSpace(name))
 	words := strings.Fields(name)
 	if len(words) == 0 {

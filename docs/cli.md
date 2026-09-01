@@ -144,6 +144,62 @@ pretty-converter check [flags]
 
 ---
 
+### `format`
+
+Turn raw, unstructured `.txt` (a single file or a directory) into clean
+`.mdx` files — proper `[X.Y.Z]` frontmatter, Markdown headings, lists, and
+fenced code blocks — plus a scaffolded `go-pretty-converter.yml`, ready to
+`check`/`build` immediately.
+
+Detection is heuristic and deterministic: no AI/LLM, no network access, and
+deliberately conservative — every rule is tuned to avoid misreading
+ordinary prose as structure, rather than to maximize how much structure it
+finds. `format` never touches Chrome and never produces a PDF itself; the
+generated output is meant to be reviewed, then run through `check`/
+`analyze`/`build` like any other source.
+
+```
+pretty-converter format <input> [flags]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--out` | `formatted` | Output directory for the generated `.mdx` files + `go-pretty-converter.yml` |
+| `--force` | `false` | Overwrite an existing, non-empty `--out` directory |
+| `--title` | `""` | Book title for the scaffolded `go-pretty-converter.yml` |
+| `--author` | `""` | Book author for the scaffolded `go-pretty-converter.yml` |
+| `--no-verify` | `false` | Skip re-parsing/analyzing the generated output |
+| `--json` | `false` | Output as JSON |
+
+| Rule | Signal | What it produces |
+|---|---|---|
+| Chapter boundary | A blank-line-isolated short line (or two lines, the second a `===` underline) that reads as a title, not a sentence | A new `.mdx` file, `[N.0.0]` |
+| Fenced code | A block already wrapped in ` ``` ` fences | Passed through byte-for-byte |
+| Indented code | Every non-blank line in a block indented ≥4 spaces or a tab | Dedented and wrapped in a fenced block; consecutive indented blocks merge into one |
+| List | ≥2 lines starting with `-`/`*`/`•` or `N.`/`N)` | A normalized `-`/`N.` Markdown list |
+| Subheading | A line immediately followed by a `---` underline | `## Title` within the current chapter |
+| Paragraph | Everything else | Markdown-escaped prose (so raw text can't be misread as syntax once re-parsed) |
+
+A lone numbered line like `1. Introduction` is a chapter title, not a
+list — the ≥2-line threshold above is what disambiguates it from `1. Step
+one` / `2. Step two`. An isolated short line *without* a `---` underline
+stays a paragraph, not a subheading — that signal alone is indistinguishable
+from an ordinarily soft-wrapped first line.
+
+`format` also prints an advisory theme suggestion (never auto-applied,
+just written into the scaffolded config's `theme:` key) based on lightweight
+content signals — resume-style section headers, citation markers, code
+density, and the like.
+
+By default, the generated output is re-parsed and run through the same
+content analysis `analyze` uses, purely as an informational summary.
+
+Exit status: `0` unless an I/O error occurs (a bad input path, or an
+existing `--out` directory without `--force`) — verify findings never fail
+the run; enforcement happens later, at `check`/`analyze`/`build` time.
+
+---
+
 ### `analyze`
 
 Statically analyze parsed MDX content for patterns that render poorly — or

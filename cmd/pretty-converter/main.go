@@ -77,6 +77,10 @@ var (
 
 	formatStr     string
 	buildLanguage string
+
+	formatOutPath  string
+	formatForce    bool
+	formatNoVerify bool
 )
 
 var rootCmd = &cobra.Command{
@@ -300,6 +304,33 @@ the switch for CI gates.`,
 	RunE: runAnalyze,
 }
 
+var formatCmd = &cobra.Command{
+	Use:   "format <input>",
+	Short: "Convert raw .txt into structured .mdx files",
+	Long: `Analyze raw, unstructured .txt (a single file or a directory) and turn it
+into clean .mdx files with proper [X.Y.Z] frontmatter, headings, lists, and
+fenced code blocks — plus a scaffolded go-pretty-converter.yml, ready to
+'pretty-converter check'/'build' immediately.
+
+This is heuristic and deterministic — no AI/LLM, no network access — and
+deliberately conservative: it only promotes structure it's confident about,
+rather than maximizing how much it finds. It never touches Chrome and never
+produces a PDF itself; the output is meant to be reviewed, then run through
+the existing check/analyze/build commands like any other source.
+
+By default the generated output is re-parsed and run through the same
+content analysis 'analyze' uses, purely as an informational summary — pass
+--no-verify to skip it. Exit status only reflects I/O errors (a bad input
+path, or an existing --out without --force); verify findings never fail
+the run.`,
+	Example: `  pretty-converter format notes.txt --out formatted
+  pretty-converter format ./raw-notes --out formatted --title "My Book" --author "Jane Doe"
+  pretty-converter format notes.txt --out formatted --force   # overwrite existing output
+  pretty-converter format notes.txt --out formatted --json --quiet`,
+	Args: cobra.ExactArgs(1),
+	RunE: runFormat,
+}
+
 func init() {
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(checkCmd)
@@ -312,6 +343,7 @@ func init() {
 	rootCmd.AddCommand(themeCmd)
 	rootCmd.AddCommand(epubCmd)
 	rootCmd.AddCommand(kindleCmd)
+	rootCmd.AddCommand(formatCmd)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "path to config file")
 	rootCmd.PersistentFlags().StringVar(&sourceDir, "source", "book", "source MDX directory")
@@ -410,6 +442,13 @@ func init() {
 	kindleCmd.Flags().StringVar(&fontCode, "font-code", "", "theme override: code font family")
 	kindleCmd.Flags().StringVar(&density, "density", "", "spacing density: compact, normal, or relaxed")
 	kindleCmd.Flags().BoolVar(&allowNetworkFonts, "allow-network-fonts", false, "allow fetching Google Fonts declared by the theme (enables network access)")
+
+	formatCmd.Flags().StringVar(&formatOutPath, "out", "formatted", "output directory for the generated .mdx files + go-pretty-converter.yml")
+	formatCmd.Flags().BoolVar(&formatForce, "force", false, "overwrite an existing, non-empty --out directory")
+	formatCmd.Flags().StringVar(&title, "title", "", "book title (for the scaffolded go-pretty-converter.yml)")
+	formatCmd.Flags().StringVar(&author, "author", "", "book author (for the scaffolded go-pretty-converter.yml)")
+	formatCmd.Flags().BoolVar(&formatNoVerify, "no-verify", false, "skip re-parsing/analyzing the generated output")
+	formatCmd.Flags().BoolVar(&jsonOutput, "json", false, "output as JSON")
 }
 
 func main() {

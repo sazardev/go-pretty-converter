@@ -253,13 +253,13 @@ func assignAutoIDs(paths []string, existing []*Document) []autoEntry {
 	for i, path := range paths {
 		base := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 		if major, rest, ok := splitTxtName(base); ok {
-			entries[i] = autoEntry{path: path, id: fmt.Sprintf("[%d.0.0]", major), title: humanizeTitle(rest)}
+			entries[i] = autoEntry{path: path, id: fmt.Sprintf("[%d.0.0]", major), title: HumanizeTitle(rest)}
 			if major > maxMajor {
 				maxMajor = major
 			}
 			continue
 		}
-		entries[i] = autoEntry{path: path, title: humanizeTitle(base)}
+		entries[i] = autoEntry{path: path, title: HumanizeTitle(base)}
 		pending = append(pending, i)
 	}
 

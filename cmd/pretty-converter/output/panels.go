@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sazardev/go-pretty-converter/analyze"
+	"github.com/sazardev/go-pretty-converter/format"
 	"github.com/sazardev/go-pretty-converter/mdx"
 )
 
@@ -125,6 +126,68 @@ func PrintAnalysisSummary(issues []analyze.Issue, docFiles []string) {
 			KeyValue("Warnings", WarningStyle.Render(fmt.Sprintf("%d", warnings)))+"\n"+
 			KeyValue("Improvements", InfoStyle.Render(fmt.Sprintf("%d", infos))),
 	))
+}
+
+// PrintFormatSummary prints format.Convert's per-document detection
+// results (id/title/counts), then any verify findings (grouped by file, in
+// the order Analyze produced them — already document order), then a
+// closing Panel with totals, the suggested theme (if any), and outDir.
+func PrintFormatSummary(report *format.Report, verifyIssues []analyze.Issue, outDir string) {
+	fmt.Println()
+	for _, doc := range report.Documents {
+		fmt.Printf("  %s %s\n", SuccessSymbol, KeyValue(doc.ID, doc.Title))
+		fmt.Printf("      %s\n", MutedStyle.Render(fmt.Sprintf(
+			"%s — %d heading(s), %d list(s), %d code block(s), %d paragraph(s)",
+			doc.Filename, doc.Chapter.Headings, doc.Chapter.Lists, doc.Chapter.CodeBlocks, doc.Chapter.Paragraphs)))
+	}
+
+	errors, warnings, infos := 0, 0, 0
+	if len(verifyIssues) > 0 {
+		fmt.Println()
+		fmt.Println("  " + HeadingStyle.Render("Verification"))
+		lastFile := ""
+		for _, iss := range verifyIssues {
+			if iss.File != lastFile {
+				fmt.Printf("  %s\n", FilePathStyle.Render(iss.File))
+				lastFile = iss.File
+			}
+			switch iss.Severity {
+			case analyze.SeverityError:
+				errors++
+				fmt.Printf("    %s [%s] %s\n", ErrorSymbol, iss.Check, ErrorStyle.Render(iss.Message))
+			case analyze.SeverityWarning:
+				warnings++
+				fmt.Printf("    %s [%s] %s\n", WarningSymbol, iss.Check, WarningStyle.Render(iss.Message))
+			default:
+				infos++
+				fmt.Printf("    %s [%s] %s\n", InfoSymbol, iss.Check, iss.Message)
+			}
+		}
+	}
+
+	lines := []string{
+		KeyValue("Documents", NumberStyle.Render(fmt.Sprintf("%d", len(report.Documents)))),
+		KeyValue("Headings", fmt.Sprintf("%d", report.TotalHeadings)),
+		KeyValue("Lists", fmt.Sprintf("%d", report.TotalLists)),
+		KeyValue("Code blocks", fmt.Sprintf("%d", report.TotalCodeBlocks)),
+	}
+	if report.SuggestedTheme != "" {
+		lines = append(lines, KeyValue("Suggested theme", fmt.Sprintf("%s (%s)", report.SuggestedTheme, report.SuggestedCategory)))
+	}
+	if len(verifyIssues) > 0 {
+		lines = append(lines, KeyValue("Verify errors", ErrorStyle.Render(fmt.Sprintf("%d", errors))))
+		lines = append(lines, KeyValue("Verify warnings", WarningStyle.Render(fmt.Sprintf("%d", warnings))))
+		if infos > 0 {
+			lines = append(lines, KeyValue("Verify improvements", InfoStyle.Render(fmt.Sprintf("%d", infos))))
+		}
+	}
+	lines = append(lines, KeyValue("Output", outDir))
+
+	fmt.Println()
+	fmt.Println(Panel("Format Complete!", strings.Join(lines, "\n")))
+	fmt.Println()
+	fmt.Println("  " + MutedStyle.Render("Next:") +
+		" " + CodeStyle.Render(fmt.Sprintf("cd %s && pretty-converter check", outDir)))
 }
 
 type PreFlightResult struct {

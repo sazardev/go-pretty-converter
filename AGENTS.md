@@ -11,6 +11,7 @@ It is both a Go library (`github.com/sazardev/go-pretty-converter`) and a CLI to
 ```bash
 go run ./cmd/pretty-converter build --source ./docs --out out.pdf   # build a PDF
 go run ./cmd/pretty-converter check --source ./docs                  # validate only (the command is `check`, not `validate`)
+go run ./cmd/pretty-converter format notes.txt --out formatted       # raw .txt -> structured .mdx (heuristic, no AI)
 go run ./cmd/pretty-converter analyze --source ./docs                # static cross-format rendering-quality analysis, no Chrome/Calibre
 go run ./cmd/pretty-converter epub --source ./docs --out out.epub    # EPUB build, no Chrome required
 go run ./cmd/pretty-converter kindle --source ./docs --out out.mobi  # Kindle build, needs Calibre's ebook-convert on PATH
@@ -29,9 +30,10 @@ tidy → lint → test (-race, 3 OS matrix) → vet → vulncheck → build.
 ## Architecture
 
 ```
-cmd/pretty-converter/    CLI entrypoint (cobra): build, check, analyze, init, watch, serve, epub, kindle, theme, version, completion
+cmd/pretty-converter/    CLI entrypoint (cobra): build, check, format, analyze, init, watch, serve, epub, kindle, theme, version, completion
 pdf.go             Root package — public API: New(), Build(), ParseDir(), ComposeHTML(), Render(), Validate(), LastAudit()
 mdx/               MDX parser (goldmark-based), custom component transpiler, validator interface
+format/            Heuristic raw .txt -> structured .mdx converter (no AI, no network) + go-pretty-converter.yml scaffold
 analyze/           Static cross-format (PDF/EPUB/Kindle) rendering-quality analysis over parsed docs, no Chrome/Calibre
 compose/           HTML composition: TOC, go:embed'd template.html + print.css
 render/            Chrome headless PDF rendering via chromedp + automatic quality audit
