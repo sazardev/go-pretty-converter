@@ -69,6 +69,7 @@ var (
 
 	kindleOutPath  string
 	kindleLanguage string
+	kindleNoVerify bool
 
 	analyzeMaxTableColumns   int
 	analyzeMaxCodeLineLength int
@@ -429,6 +430,7 @@ func init() {
 	kindleCmd.Flags().StringVar(&author, "author", "", "book author")
 	kindleCmd.Flags().StringVar(&coverImage, "cover-image", "", "custom cover image (.png/.jpg/.jpeg/.svg/.webp), full-bleed as the first page")
 	kindleCmd.Flags().StringVar(&kindleLanguage, "language", "en", "book language (BCP-47 tag, e.g. en, es)")
+	kindleCmd.Flags().BoolVar(&kindleNoVerify, "no-verify", false, "skip the post-conversion integrity check (extracts the file's text with Calibre and scans for leaked markup and missing chapters)")
 
 	kindleCmd.Flags().StringVar(&themeName, "theme", defaultTheme, fmt.Sprintf("book theme (%s, or a custom theme name/path)", strings.Join(themeNames(), ", ")))
 	kindleCmd.Flags().StringVar(&cssPath, "css", "", "custom CSS file path (overrides theme)")

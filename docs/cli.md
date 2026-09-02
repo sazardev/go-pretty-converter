@@ -329,12 +329,32 @@ pretty-converter kindle [flags]
 | `--font-code` | `""` | Theme override: code font family |
 | `--density` | `""` | Spacing density: `compact`, `normal`, or `relaxed` |
 | `--allow-network-fonts` | `false` | Allow fetching Google Fonts declared by the theme |
+| `--no-verify` | `false` | Skip the post-conversion integrity check (see below) |
 
 The target format (MOBI, AZW3, ...) is inferred from `--out`'s extension —
 `.mobi` (the default) is the most broadly compatible legacy Kindle format;
 `.azw3` targets the newer KF8 format with fuller CSS support. `ebook-convert`
 output on failure or timeout (5 minute default) is surfaced verbatim in the
 error message.
+
+Every successful conversion runs a **post-conversion integrity check** by
+default: Calibre re-extracts the file's text layer, and the result is scanned
+for (a) leaked markup — raw HTML/KF8 fragments (`aid=`, `class="chroma-`,
+highlight token classes) that broken renderers spill into visible text — and
+(b) missing content — every source chapter's title must appear in the
+extracted text. A file that fails the check is reported with the damaged
+chapters named; `--no-verify` skips the check for builds where the extra
+Calibre pass (seconds to a couple of minutes on large books) is not wanted.
+
+Two Kindle-safety guarantees are baked into the conversion itself, no flags
+needed: the EPUB stylesheet ships with CSS custom properties (`var(--pdf-*)`)
+resolved to concrete values and `display: flex/grid` removed (raw `var()` and
+flex are unsupported by Kindle's KF8 renderer, and silently dropping those
+rules is what makes adjacent text runs collide and splice on device), and
+code blocks are converted to plain `<pre><code>` text — Chroma's
+per-token `<span>` soup becomes hundreds of KF8 anchor fragments per block,
+which old Kindle renderers mangle into raw markup. PDF and EPUB output keep
+syntax highlighting and the themed CSS.
 
 ---
 

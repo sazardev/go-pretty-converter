@@ -536,7 +536,14 @@ func TestWriteUsesDefaultCSSWhenOptionsCSSEmpty(t *testing.T) {
 	if !ok {
 		t.Fatal("expected OEBPS/css/style.css in EPUB archive")
 	}
-	if !strings.Contains(string(cssData), "--pdf-bg") {
-		t.Error("expected default CSS to use CSS custom properties")
+	// The default CSS is shipped through sanitizeEPUBCSS: custom
+	// properties are resolved to concrete values so no reader (notably
+	// Kindle's KF8 renderer, which doesn't support var() at all) ever
+	// drops the rules that keep text spaced and readable.
+	if strings.Contains(string(cssData), "var(") {
+		t.Error("expected default CSS to have custom properties resolved to concrete values (Kindle-safe EPUB)")
+	}
+	if !strings.Contains(string(cssData), "background: #ffffff;") {
+		t.Error("expected the default CSS's fallback background to survive sanitization")
 	}
 }

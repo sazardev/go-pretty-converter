@@ -89,5 +89,33 @@ func runKindle(cmd *cobra.Command, args []string) error {
 	}
 	writeSpinner.Done(fmt.Sprintf("Wrote %s (%s)", kindleOutputPath, size))
 
+	if kindleNoVerify {
+		if !quiet {
+			fmt.Println("    " + output.Warn("verification skipped (--no-verify)"))
+		}
+		return nil
+	}
+
+	verifySpinner := output.StartSpinner("Verifying output...")
+	audit, verifyErr := kindle.VerifyConverted(cmd.Context(), calibreExecPath, kindleOutputPath, docs, 0)
+	if verifyErr != nil {
+		verifySpinner.Fail(verifyErr.Error())
+		return fmt.Errorf("verifying Kindle output: %w", verifyErr)
+	}
+	if !audit.OK() {
+		verifySpinner.Fail("conversion damaged")
+		for _, f := range audit.Findings {
+			if f.Severity == kindle.SeverityError {
+				where := f.Chapter
+				if where == "" {
+					where = "whole book"
+				}
+				fmt.Printf("  %s\n", output.Error(fmt.Sprintf("[%s] %s", where, f.Message)))
+			}
+		}
+		return fmt.Errorf("kindle output failed verification: the file is likely to render broken on a Kindle (see findings above; use --no-verify to override)")
+	}
+	verifySpinner.Done(fmt.Sprintf("PASS — %d/%d chapters found, no markup leaks", len(docs), len(docs)))
+
 	return nil
 }

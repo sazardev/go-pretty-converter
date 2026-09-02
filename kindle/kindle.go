@@ -43,6 +43,13 @@ func applyDefaults(opts Options) Options {
 	if opts.Timeout <= 0 {
 		opts.Timeout = 5 * time.Minute
 	}
+	// Kindle output always ships plain <pre><code> blocks: Calibre's
+	// MOBI/AZW3 conversion rewrites every text fragment into a KF8 aid
+	// span, and Chroma's per-token spans (one per whitespace run
+	// included) turn each code block into thousands of fragments that
+	// old Kindle renderers mangle into visible raw markup. Plain code
+	// converts cleanly on any Kindle.
+	opts.EPUB.PlainCode = true
 	return opts
 }
 

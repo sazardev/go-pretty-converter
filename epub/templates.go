@@ -169,7 +169,15 @@ func xhtmlifyFragment(htmlFragment string) (string, error) {
 }
 
 func renderChapterXHTML(opts Options, ch chapterInfo) (string, error) {
-	body, err := xhtmlifyFragment(ch.doc.HTML)
+	body := ch.doc.HTML
+	if opts.PlainCode {
+		flattened, err := flattenCodeBlocks(body)
+		if err != nil {
+			return "", fmt.Errorf("chapter %q: %w", ch.doc.ID(), err)
+		}
+		body = flattened
+	}
+	renderedBody, err := xhtmlifyFragment(body)
 	if err != nil {
 		return "", fmt.Errorf("chapter %q: %w", ch.doc.ID(), err)
 	}
@@ -185,7 +193,7 @@ func renderChapterXHTML(opts Options, ch chapterInfo) (string, error) {
 		Lang:     opts.Language,
 		Title:    ch.doc.Title(),
 		AnchorID: mdx.AnchorID(ch.doc.ID()),
-		Body:     template.HTML(body),
+		Body:     template.HTML(renderedBody),
 	})
 	return buf.String(), err
 }

@@ -30,6 +30,16 @@ type Options struct {
 	// full-page image, first in reading order. Must be .png/.jpg/.jpeg/
 	// .svg/.webp.
 	CoverImage string
+	// PlainCode renders code blocks as plain <pre><code> text, stripping
+	// Chroma's per-token highlight spans. Who would want that? The Kindle
+	// pipeline: Calibre's MOBI/AZW3 conversion rewrites every text
+	// fragment with a KF8 aid span, so span-dense code blocks become
+	// thousands of fragments that old Kindle renderers mangle into raw
+	// markup and spliced words. Plain code converts cleanly on any
+	// Kindle, at the cost of losing syntax colors there (PDF and EPUB
+	// builds keep highlighting). The kindle package enables this by
+	// default.
+	PlainCode bool
 }
 
 // defaultTitle mirrors compose.DefaultOptions' own "Document" fallback,
@@ -134,6 +144,12 @@ func Write(docs []*mdx.Document, opts Options, outputPath string) error {
 	if css == "" {
 		css = defaultCSS
 	}
+	// Kindle-class renderers predate CSS custom properties, flex, and
+	// calc(); resolve them to concrete values before the sheet goes into
+	// the archive so no reader ever sees the rules degrade (or vanish)
+	// underneath the text. Cheap, lossless for EPUB readers, and it
+	// removes the #1 cause of spliced text on Kindle.
+	css = sanitizeEPUBCSS(css)
 	if err = writeZipString(zw, "OEBPS/css/style.css", css); err != nil {
 		return err
 	}
@@ -155,6 +171,15 @@ func Write(docs []*mdx.Document, opts Options, outputPath string) error {
 		var xhtml string
 		if xhtml, err = renderChapterXHTML(opts, ch); err != nil {
 			return fmt.Errorf("rendering chapter for %s: %w", ch.doc.ID(), err)
+		}
+		// Every chapter must be well-formed XML (it ships as
+		// application/xhtml+xml) — a malformed chapter wouldn't just be
+		// rejected by strict readers, Calibre would silently "fix" it
+		// during Kindle conversion, which is what produces spliced and
+		// missing text on device. Verify before writing it into the
+		// archive.
+		if verr := validateWellFormedXHTML(xhtml); verr != nil {
+			return fmt.Errorf("chapter %s: %w", ch.doc.ID(), verr)
 		}
 		if err = writeZipString(zw, "OEBPS/text/"+ch.file, xhtml); err != nil {
 			return err
